@@ -1,0 +1,79 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+.venv/
+.ENV/
+env.bak/
+venv.bak/
+.venv.bak/
+.ENV.bak/
+
+# Build results
+dist/
+build/
+develop-eggs/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env*
+!.env.example
+
+# Testing
+.coverage
+coverage/
+
+# Python specific
+*.pyc
+__pycache__/
+.pytest_cache/
+.pyre/
+.mypy_cache/
+
+# ROS specific
+*.so
+*.o
+*.a
+*.dylib
+*.dll
+*.cmake
+Makefile
+cmake_install.cmake
+CMakeCache.txt
+CTestTestfile.cmake
+Testing/
+catkin_generated/
+catkin_markers/
+devel/
+install/
+build/

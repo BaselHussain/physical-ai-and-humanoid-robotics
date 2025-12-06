@@ -1,0 +1,29 @@
+graph TD
+    A[Gazebo Harmonic<br/>Simulation Engine] --> B[ros_gz_bridge<br/>Parameter Bridge]
+
+    B --> C[ROS 2 Topics<br/>Joint States<br/>Depth Camera<br/>LiDAR Points<br/>IMU Data<br/>Contact Sensors<br/>Odometry<br/>Clock]
+
+    C --> D[ros_tcp_endpoint<br/>TCP Server]
+
+    D --> E[Unity 3D<br/>ROS TCP Connector]
+
+    E --> F[Unity Visualization<br/>Robot Meshes<br/>Sensor Data<br/>Environment]
+
+    G[Humanoid URDF] --> A
+
+    H[Apartment World SDF] --> A
+
+    I[RViz2] -.-> C
+
+    J[External ROS Nodes] -.-> C
+
+    K[Unity Scripts] --> E
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+    style H fill:#e0f2f1

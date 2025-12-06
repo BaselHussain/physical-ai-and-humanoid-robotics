@@ -1,0 +1,19 @@
+graph TD
+    A[Isaac Sim 2025] -->|Sensor Data<br/>Camera, IMU, Joint States| B(ROS 2 Bridge)
+    B -->|Published Topics<br/>/joint_states, /camera/color/image_raw| C{ROS 2 Network}
+    C -->|Simulation Data| D[Workstation<br/>Processing]
+    C -->|Robot Commands| E[Jetson Orin Nano]
+    E -->|RealSense D435i| F[Real World Sensors]
+    F -->|Depth/RGB Data| E
+    E -->|cuVSLAM| G[VSLAM Map<br/>Generation]
+    G -->|Generated Map| H[Nav2<br/>Navigation Stack]
+    H -->|Navigation Commands| E
+    E -->|Processed Data| C
+    C -->|Processed Data| A
+    I[Synthetic Data<br/>Generation] --> A
+    J[Humanoid Robot<br/>Model] --> A
+
+    style A fill:#4e8cff,stroke:#333,stroke-width:2px
+    style E fill:#ff6b6b,stroke:#333,stroke-width:2px
+    style G fill:#9b59b6,stroke:#333,stroke-width:2px
+    style H fill:#2ecc71,stroke:#333,stroke-width:2px

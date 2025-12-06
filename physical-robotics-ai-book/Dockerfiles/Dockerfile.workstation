@@ -1,0 +1,55 @@
+# Dockerfile.workstation - Isaac Sim Workstation Environment
+FROM nvcr.io/nvidia/isaac-sim:2025.1.0-hotfix1
+
+# Install additional dependencies for development
+RUN apt-get update && apt-get install -y \
+    python3-dev \
+    python3-pip \
+    git \
+    vim \
+    htop \
+    build-essential \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROS 2 Humble dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-desktop \
+    python3-rosdep \
+    python3-rosinstall \
+    python3-rosinstall-generator \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Isaac ROS packages
+RUN apt-get update && apt-get install -y \
+    ros-humble-isaac-ros-common \
+    ros-humble-isaac-ros-perception \
+    ros-humble-isaac-ros-vslam \
+    ros-humble-isaac-ros-cuvslam \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional Python packages for development
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install \
+    opencv-python \
+    numpy \
+    matplotlib \
+    jupyter \
+    torch \
+    torchvision \
+    tensorflow
+
+# Set up workspace
+WORKDIR /workspace
+
+# Set Isaac Sim performance settings
+ENV ISAAC_PERFORMANCE_MODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Expose ports for Isaac Sim
+EXPOSE 55555
+EXPOSE 55556
+
+# Default command
+CMD ["/isaac-sim/python.sh"]

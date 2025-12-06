@@ -1,0 +1,87 @@
+# ROS 2 Interface Contracts for Isaac Robot Brain Module
+
+## Isaac Sim ROS 2 Bridge Interface
+
+### Published Topics
+- `/joint_states`: sensor_msgs/JointState - Current joint positions, velocities, efforts
+- `/tf` and `/tf_static`: tf2_msgs/TFMessage - Robot transforms and static transforms
+- `/camera/color/image_raw`: sensor_msgs/Image - RGB camera data
+- `/camera/depth/image_raw`: sensor_msgs/Image - Depth image data
+- `/imu/data`: sensor_msgs/Imu - Inertial measurement unit data
+
+### Subscribed Topics
+- `/joint_commands`: trajectory_msgs/JointTrajectory - Joint position/velocity commands
+- `/cmd_vel`: geometry_msgs/Twist - Velocity commands for base motion
+
+### Services
+- `/reset_simulation`: std_srvs/Empty - Reset simulation to initial state
+- `/get_robot_state`: std_srvs/Trigger - Get current robot state
+
+## cuVSLAM Interface
+
+### Published Topics
+- `/cuvslam/pose`: geometry_msgs/PoseStamped - Estimated camera pose
+- `/cuvslam/map`: nav_msgs/OccupancyGrid - Generated 2D map
+- `/cuvslam/pointcloud`: sensor_msgs/PointCloud2 - 3D point cloud map
+
+### Parameters
+- `map_frame`: string - Frame ID for map (default: "map")
+- `odom_frame`: string - Frame ID for odometry (default: "odom")
+- `base_frame`: string - Robot base frame (default: "base_link")
+- `max_map_size`: int - Maximum map size in meters (default: 100)
+
+## Nav2 Interface for Bipedal Robot
+
+### Published Topics
+- `/local_costmap/costmap`: nav_msgs/OccupancyGrid - Local obstacle map
+- `/global_costmap/costmap`: nav_msgs/OccupancyGrid - Global obstacle map
+- `/plan`: nav_msgs/Path - Planned path to goal
+- `/current_goal`: geometry_msgs/PoseStamped - Current navigation goal
+
+### Action Interfaces
+- `/navigate_to_pose`: nav2_msgs/action/NavigateToPose - Navigate to specified pose
+- `/follow_path`: nav2_msgs/action/FollowPath - Follow a given path
+- `/compute_path_to_pose`: nav2_msgs/action/ComputePathToPose - Plan path to pose
+
+### Services
+- `/clear_costmap_global`: std_srvs/Empty - Clear global costmap
+- `/clear_costmap_local`: std_srvs/Empty - Clear local costmap
+
+## Isaac ROS Perception Interface
+
+### DetectNet
+- `/detectnet/detections`: vision_msgs/Detection2DArray - Object detections
+- Parameters: `model_name`, `confidence_threshold`, `input_topic`
+
+### PeopleSegNet
+- `/peoplesegnet/segmentation`: sensor_msgs/Image - Segmented people mask
+- Parameters: `model_name`, `input_topic`, `mask_output_topic`
+
+## Synthetic Data Generation Interface
+
+### Services
+- `/synthetic_data/start_generation`: std_srvs/Trigger - Start image generation
+- `/synthetic_data/stop_generation`: std_srvs/Trigger - Stop image generation
+- `/synthetic_data/set_parameters`: (custom) - Set generation parameters
+
+### Published Topics
+- `/synthetic_data/progress`: std_msgs/Int32 - Generation progress percentage
+- `/synthetic_data/image`: sensor_msgs/Image - Generated synthetic image
+- `/synthetic_data/annotations`: (custom) - Image annotations (bounding boxes, masks)
+
+## Performance Requirements
+
+### Isaac Sim Bridge
+- Publish joint_states at 100 Hz minimum
+- Publish camera data at 30 Hz minimum
+- Message latency < 10ms for control commands
+
+### VSLAM System
+- Map building time < 30 seconds for 10x10m area
+- Pose estimation rate > 10 Hz
+- Localization accuracy < 0.1m in known environments
+
+### Navigation System
+- Path planning time < 1 second for 10m path
+- Goal tolerance: 0.2m for position, 0.1 rad for orientation
+- Collision avoidance at speeds up to 0.5 m/s

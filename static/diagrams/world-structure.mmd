@@ -1,0 +1,37 @@
+graph TD
+    A[Apartment World<br/>Gazebo Harmonic] --> B[Living Room<br/>&lt;70k visual polys<br/>&lt;10k collision polys]
+
+    A --> C[Kitchen<br/>&lt;60k visual polys<br/>&lt;5k collision polys]
+
+    A --> D[Bedroom<br/>&lt;70k visual polys<br/>&lt;5k collision polys]
+
+    B --> E[Furniture Set 1<br/>Sofa, Coffee Table<br/>TV, Bookshelf]
+    B --> F[Collision Meshes<br/>Static Colliders<br/>No Physics Processing]
+
+    C --> G[Furniture Set 2<br/>Kitchen Counter<br/>Refrigerator<br/>Dining Table]
+    C --> H[Collision Meshes<br/>Static Colliders<br/>No Physics Processing]
+
+    D --> I[Furniture Set 3<br/>Bed, Dresser<br/>Nightstand<br/>Wardrobe]
+    D --> J[Collision Meshes<br/>Static Colliders<br/>No Physics Processing]
+
+    K[Lighting System<br/>Directional Lights<br/>No Shadows] --> A
+
+    L[Physics Engine<br/>DART @ 1kHz] --> A
+
+    M[Asset Sources<br/>CC0 Licensed<br/>Free3D, Open3dModel] --> E
+    M --> G
+    M --> I
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#f3e5f5
+    style D fill:#f3e5f5
+    style E fill:#fff3e0
+    style F fill:#e8f5e8
+    style G fill:#fff3e0
+    style H fill:#e8f5e8
+    style I fill:#fff3e0
+    style J fill:#e8f5e8
+    style K fill:#fce4ec
+    style L fill:#e0f2f1
+    style M fill:#f1f8e9

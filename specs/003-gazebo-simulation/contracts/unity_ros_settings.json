@@ -1,0 +1,123 @@
+{
+  "description": "Unity ROS TCP Connector Settings for Gazebo Simulation",
+  "purpose": "Configure Unity to connect to ROS 2 network via ros_tcp_endpoint",
+
+  "connection": {
+    "ros_ip_address": "127.0.0.1",
+    "ros_port": 10000,
+    "protocol": "TCP",
+    "timeout_seconds": 5,
+    "reconnect_on_disconnect": true,
+    "max_reconnect_attempts": 10
+  },
+
+  "subscribed_topics": [
+    {
+      "topic_name": "/robot/joint_states",
+      "message_type": "JointState",
+      "namespace": "RosMessageTypes.Sensor",
+      "update_frequency_hz": 60,
+      "priority": "high",
+      "purpose": "Robot articulation for visual representation"
+    },
+    {
+      "topic_name": "/robot/depth_camera/image_raw",
+      "message_type": "Image",
+      "namespace": "RosMessageTypes.Sensor",
+      "update_frequency_hz": 30,
+      "priority": "medium",
+      "purpose": "Depth camera visualization",
+      "compression": {
+        "enabled": true,
+        "format": "jpeg",
+        "quality": 75
+      }
+    },
+    {
+      "topic_name": "/robot/lidar/points",
+      "message_type": "PointCloud2",
+      "namespace": "RosMessageTypes.Sensor",
+      "update_frequency_hz": 10,
+      "priority": "medium",
+      "purpose": "LiDAR point cloud visualization"
+    },
+    {
+      "topic_name": "/robot/odometry",
+      "message_type": "Odometry",
+      "namespace": "RosMessageTypes.Nav",
+      "update_frequency_hz": 60,
+      "priority": "high",
+      "purpose": "Robot pose and velocity for camera following"
+    },
+    {
+      "topic_name": "/robot/imu/data",
+      "message_type": "Imu",
+      "namespace": "RosMessageTypes.Sensor",
+      "update_frequency_hz": 100,
+      "priority": "low",
+      "purpose": "Optional IMU data visualization"
+    },
+    {
+      "topic_name": "/clock",
+      "message_type": "Clock",
+      "namespace": "RosMessageTypes.Rosgraph",
+      "update_frequency_hz": 100,
+      "priority": "high",
+      "purpose": "Simulation time synchronization"
+    }
+  ],
+
+  "published_topics": [
+    {
+      "topic_name": "/unity/camera/pose",
+      "message_type": "Pose",
+      "namespace": "RosMessageTypes.Geometry",
+      "update_frequency_hz": 30,
+      "purpose": "Unity camera pose for debugging"
+    }
+  ],
+
+  "performance_settings": {
+    "network_buffer_size_kb": 1024,
+    "max_message_queue_size": 100,
+    "drop_old_messages": true,
+    "compression_threshold_kb": 50,
+    "enable_tcp_nodelay": true
+  },
+
+  "unity_rendering": {
+    "target_fps": 60,
+    "vsync": false,
+    "quality_level": "High",
+    "anti_aliasing": "4x MSAA",
+    "shadows": true,
+    "post_processing": true
+  },
+
+  "latency_budgets": {
+    "joint_states_ms": 5,
+    "depth_image_ms": 30,
+    "point_cloud_ms": 50,
+    "odometry_ms": 10
+  },
+
+  "bandwidth_limits": {
+    "max_total_mbps": 50,
+    "max_per_topic_mbps": 20,
+    "warn_threshold_mbps": 40
+  },
+
+  "error_handling": {
+    "log_level": "Info",
+    "log_dropped_messages": true,
+    "log_latency_warnings": true,
+    "latency_warning_threshold_ms": 100
+  },
+
+  "notes": [
+    "This configuration is for educational purposes in Module 03",
+    "Unity connection is optional - all core functionality works with Gazebo alone",
+    "For production use, consider securing the TCP connection",
+    "Adjust update frequencies based on actual Unity rendering performance"
+  ]
+}

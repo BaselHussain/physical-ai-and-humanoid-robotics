@@ -1,0 +1,37 @@
+graph TB
+    A[Humanoid URDF<br/>12-32 DoF] --> B[Gazebo Sensors<br/>System Plugin]
+
+    B --> C[Depth Camera<br/>RealSense D435<br/>848x480 @ 30Hz<br/>σ=0.007m]
+
+    B --> D[LiDAR<br/>16-Layer GPU<br/>1024 samples @ 10Hz<br/>σ=0.01m]
+
+    B --> E[IMU<br/>MEMS-based<br/>Angular + Linear Accel<br/>100Hz, σ=0.009rad/s]
+
+    B --> F[Contact Sensors<br/>Left/Right Foot<br/>100Hz<br/>For Walking Control]
+
+    C --> G[ros_gz_bridge]
+    D --> G
+    E --> G
+    F --> G
+
+    G --> H[ROS 2 Topics]
+
+    H --> I[Joint States]
+    H --> J[Depth Image]
+    H --> K[LiDAR Points]
+    H --> L[IMU Data]
+    H --> M[Contact States]
+
+    style A fill:#e0f2f1
+    style B fill:#f3e5f5
+    style C fill:#ffebee
+    style D fill:#ffebee
+    style E fill:#ffebee
+    style F fill:#ffebee
+    style G fill:#e3f2fd
+    style H fill:#e8f5e8
+    style I fill:#f1f8e9
+    style J fill:#f1f8e9
+    style K fill:#f1f8e9
+    style L fill:#f1f8e9
+    style M fill:#f1f8e9

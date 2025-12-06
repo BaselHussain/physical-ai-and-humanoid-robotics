@@ -1,0 +1,303 @@
+# Orchestrator Agent Description
+# This agent coordinates hand-offs between specialized skills for Physical AI & Humanoid Robotics tasks
+
+name: orchestrator_agent
+version: 1.0.0
+description: |
+  Orchestrator agent that routes user requests to specialized skills (urdf-builder, gazebo-world-builder,
+  isaac-perception-tuner, vla-orchestrator, robot-validator) based on intent detection and keywords.
+
+category: coordination
+author: Physical AI Engineering Team
+created: 2025-12-05
+updated: 2025-12-05
+
+# Hand-off Keywords and Routing Rules
+# When the user's request contains these keywords, route to the appropriate skill
+
+routing_rules:
+  urdf-builder:
+    triggers:
+      - "urdf"
+      - "xacro"
+      - "robot description"
+      - "humanoid model"
+      - "joint"
+      - "link"
+      - "inertia"
+      - "collision"
+      - "visual"
+      - "ros2_control"
+      - "gazebo plugin"
+      - "dof"
+      - "degrees of freedom"
+      - "robot arm"
+      - "gripper"
+      - "sensor integration"
+    examples:
+      - "Create a URDF for a 20-DoF humanoid robot"
+      - "Add ros2_control to my robot description"
+      - "Fix inertia tensors in my URDF"
+      - "Integrate RealSense camera into robot URDF"
+    priority: high
+    description: Use when user needs to create or modify robot URDF/Xacro files
+
+  gazebo-world-builder:
+    triggers:
+      - "gazebo"
+      - "world"
+      - "environment"
+      - "apartment"
+      - "office"
+      - "room"
+      - "furniture"
+      - "obstacle"
+      - "lighting"
+      - "domain randomization"
+      - "physics"
+      - "simulation environment"
+      - "indoor scene"
+      - "sdf"
+    examples:
+      - "Build a Gazebo apartment world with 3 rooms"
+      - "Add domain randomization to my simulation"
+      - "Create an office environment with furniture"
+      - "Tune physics parameters for realistic contacts"
+    priority: high
+    description: Use when user needs to create or modify Gazebo simulation worlds
+
+  isaac-perception-tuner:
+    triggers:
+      - "isaac ros"
+      - "isaac sim"
+      - "perception"
+      - "cuvslam"
+      - "detectnet"
+      - "visual slam"
+      - "object detection"
+      - "depth processing"
+      - "jetson"
+      - "realsense"
+      - "confidence threshold"
+      - "tensorrt"
+      - "gpu inference"
+      - "camera calibration"
+    examples:
+      - "Tune Isaac ROS cuVSLAM for RealSense D435"
+      - "Configure DetectNet for person detection"
+      - "Optimize perception pipeline on Jetson Orin Nano"
+      - "Adjust confidence thresholds to reduce false positives"
+    priority: high
+    description: Use when user needs to configure or tune Isaac ROS perception packages
+
+  vla-orchestrator:
+    triggers:
+      - "natural language"
+      - "llm"
+      - "gpt"
+      - "claude"
+      - "language model"
+      - "voice command"
+      - "text command"
+      - "robot brain"
+      - "task planning"
+      - "action sequence"
+      - "human-robot interaction"
+      - "conversational"
+      - "vla"
+      - "vision-language-action"
+      - "embodied ai"
+    examples:
+      - "Build an LLM brain that controls my robot"
+      - "Create natural language interface for robot commands"
+      - "Integrate GPT-4 to decompose 'clean the table' into actions"
+      - "Add voice control to my humanoid robot"
+    priority: high
+    description: Use when user needs to create LLM-powered natural language robot control
+
+  robot-validator:
+    triggers:
+      - "validate"
+      - "diagnostic"
+      - "health check"
+      - "debug"
+      - "troubleshoot"
+      - "test"
+      - "ci/cd"
+      - "integration test"
+      - "tf tree"
+      - "sensor check"
+      - "action server"
+      - "system test"
+      - "pre-flight"
+      - "verification"
+    examples:
+      - "Validate my robot before deployment"
+      - "Run diagnostics to check why camera isn't publishing"
+      - "Create CI test for URDF and TF tree"
+      - "Check if all action servers are running"
+    priority: medium
+    description: Use when user needs to validate robot configuration or diagnose issues
+
+# Multi-Skill Workflows
+# Some user requests may require multiple skills in sequence
+
+workflows:
+  complete_robot_setup:
+    description: "Full robot setup from URDF to deployed system"
+    steps:
+      - skill: urdf-builder
+        description: "Create robot URDF/Xacro description"
+      - skill: gazebo-world-builder
+        description: "Build simulation environment"
+      - skill: isaac-perception-tuner
+        description: "Configure perception pipeline"
+      - skill: robot-validator
+        description: "Validate complete system"
+    triggers:
+      - "set up my robot from scratch"
+      - "complete robot development pipeline"
+      - "end-to-end robot setup"
+
+  sim_to_real_pipeline:
+    description: "Simulation-to-real transfer workflow"
+    steps:
+      - skill: gazebo-world-builder
+        description: "Create realistic simulation environment with domain randomization"
+      - skill: isaac-perception-tuner
+        description: "Tune perception for sim-to-real transfer"
+      - skill: robot-validator
+        description: "Validate perception quality on real hardware"
+    triggers:
+      - "sim to real"
+      - "sim-to-real transfer"
+      - "deploy from simulation to real robot"
+
+  intelligent_manipulation:
+    description: "Build intelligent manipulation system"
+    steps:
+      - skill: urdf-builder
+        description: "Create manipulator URDF with gripper"
+      - skill: vla-orchestrator
+        description: "Add LLM control for natural language commands"
+      - skill: isaac-perception-tuner
+        description: "Configure object detection and pose estimation"
+      - skill: robot-validator
+        description: "Validate manipulation pipeline"
+    triggers:
+      - "build manipulation system"
+      - "intelligent grasping"
+      - "natural language manipulation"
+
+# Conflict Resolution
+# If multiple skills match, use these rules to disambiguate
+
+conflict_resolution:
+  # If both urdf-builder and gazebo-world-builder match, prefer based on noun
+  urdf_vs_gazebo:
+    rule: "If 'robot' appears more than 'world' or 'environment', choose urdf-builder"
+
+  # If both isaac-perception-tuner and vla-orchestrator match, prefer based on verb
+  perception_vs_orchestration:
+    rule: "If 'tune' or 'configure' appears, choose isaac-perception-tuner; if 'control' or 'command', choose vla-orchestrator"
+
+  # If robot-validator matches with another skill, validator is usually secondary
+  validator_priority:
+    rule: "Robot-validator is typically invoked after another skill completes (validation is the final step)"
+
+# Default Behavior
+# If no skill matches, provide guidance
+
+default_response:
+  message: |
+    I didn't detect a clear match for any of my specialized skills:
+    - urdf-builder: Create/modify robot URDF/Xacro files
+    - gazebo-world-builder: Build simulation environments
+    - isaac-perception-tuner: Configure Isaac ROS perception
+    - vla-orchestrator: Build LLM-powered robot control
+    - robot-validator: Validate and diagnose robot systems
+
+    Could you clarify your request with more details about what you need?
+  examples:
+    - "If you want to create a robot model, try: 'Create a URDF for a humanoid robot'"
+    - "If you want to build a simulation, try: 'Build a Gazebo apartment world'"
+    - "If you want natural language control, try: 'Build an LLM brain for my robot'"
+
+# Success Metrics
+# Track these metrics to measure orchestrator effectiveness
+
+metrics:
+  - correct_skill_routing_rate
+  - user_clarification_requests
+  - multi_skill_workflow_completions
+  - average_time_to_skill_match
+
+# Example User Interactions
+
+examples:
+  - user_input: "I need to create a 20-DoF humanoid URDF with RealSense camera"
+    matched_skill: urdf-builder
+    confidence: high
+    rationale: "Contains keywords: 'URDF', 'humanoid', 'RealSense camera'"
+
+  - user_input: "Build an indoor apartment with furniture for navigation testing"
+    matched_skill: gazebo-world-builder
+    confidence: high
+    rationale: "Contains keywords: 'apartment', 'furniture', 'navigation' (implies simulation)"
+
+  - user_input: "My Isaac ROS DetectNet is giving too many false positives"
+    matched_skill: isaac-perception-tuner
+    confidence: high
+    rationale: "Contains keywords: 'Isaac ROS', 'DetectNet', 'false positives' (tuning needed)"
+
+  - user_input: "I want my robot to respond to commands like 'go to the kitchen'"
+    matched_skill: vla-orchestrator
+    confidence: high
+    rationale: "Contains keywords: 'commands', 'natural language' (implied by quoted text)"
+
+  - user_input: "Check if my robot is ready to deploy"
+    matched_skill: robot-validator
+    confidence: high
+    rationale: "Contains keywords: 'check', 'ready to deploy' (pre-flight validation)"
+
+  - user_input: "Set up my humanoid robot from URDF to deployed system"
+    matched_workflow: complete_robot_setup
+    confidence: high
+    rationale: "Multi-step workflow: URDF → simulation → perception → validation"
+
+  - user_input: "Help me with ROS 2"
+    matched_skill: null
+    confidence: low
+    rationale: "Too vague - request clarification"
+    response: "I can help with ROS 2 tasks! Are you looking to: (1) Create a robot model, (2) Build a simulation, (3) Configure perception, (4) Add natural language control, or (5) Validate your system?"
+
+# Integration with Claude Code
+# How this orchestrator integrates with Claude Code skill invocation
+
+integration:
+  skill_invocation_method: "Claude Code /skill command"
+  example: |
+    User: "Create a URDF for a humanoid robot"
+    Orchestrator: Detects urdf-builder match
+    Claude Code: Invokes `/skill urdf-builder` automatically
+    urdf-builder: Guides user through URDF creation workflow
+
+  multi_skill_invocation: |
+    User: "Set up my robot from scratch"
+    Orchestrator: Detects complete_robot_setup workflow
+    Claude Code: Invokes skills sequentially:
+      1. `/skill urdf-builder`
+      2. `/skill gazebo-world-builder`
+      3. `/skill isaac-perception-tuner`
+      4. `/skill robot-validator`
+
+# Version History
+
+version_history:
+  - version: 1.0.0
+    date: 2025-12-05
+    changes:
+      - Initial release with 5 skills (urdf-builder, gazebo-world-builder, isaac-perception-tuner, vla-orchestrator, robot-validator)
+      - 3 multi-skill workflows (complete_robot_setup, sim_to_real_pipeline, intelligent_manipulation)
+      - Conflict resolution rules
+      - Default response for unmatched queries

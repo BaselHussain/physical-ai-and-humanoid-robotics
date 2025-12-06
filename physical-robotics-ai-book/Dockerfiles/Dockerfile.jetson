@@ -1,0 +1,44 @@
+# Dockerfile.jetson - Isaac ROS Runtime for Jetson Orin Nano
+FROM nvcr.io/nvidia/jetson-ros:jammy-rh-isaac-ros-humble-v0.10.0-runtime
+
+# Install additional dependencies for perception and navigation
+RUN apt-get update && apt-get install -y \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
+    ros-humble-robot-localization \
+    ros-humble-slam-toolbox \
+    ros-humble-realsense2-camera \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Isaac ROS perception packages
+RUN apt-get update && apt-get install -y \
+    ros-humble-isaac-ros-detectnet \
+    ros-humble-isaac-ros-peoplesegnet \
+    ros-humble-isaac-ros-cuvslam \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install utilities
+RUN apt-get update && apt-get install -y \
+    vim \
+    htop \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up workspace
+WORKDIR /workspace
+
+# Set environment variables for Jetson
+ENV PYTHONUNBUFFERED=1
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# Set Jetson-specific parameters
+ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+# Expose ports for ROS 2 communication
+EXPOSE 8888
+EXPOSE 11311
+
+# Default command
+CMD ["bash"]

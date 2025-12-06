@@ -1,0 +1,262 @@
+/**
+ * Custom CSS for Physical Robotics AI Book
+ * Enhanced sidebar with module/chapter numbering and improved text styling
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced sidebar styling */
+.menu {
+  font-size: 16px; /* Increased font for sidebar readability */
+}
+
+/* Module and Chapter items in sidebar */
+.menu__list-item {
+  margin-bottom: 0.4rem; /* Increased spacing */
+}
+
+.menu__link {
+  padding: 0.75rem 1rem; /* Increased padding for better spacing */
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.menu__link:hover {
+  background-color: var(--ifm-menu-color-background-hover);
+  transform: translateX(3px);
+}
+
+/* Module titles (category items) - consistent green border for ALL modules */
+.menu__list-item-collapsible > .menu__link--sublist {
+  position: relative;
+  border-left: 3px solid #4ade80; /* Consistent green border for all modules */
+  padding-left: 2rem; /* Space for bullet point */
+  font-weight: 600;
+  font-size: 17px; /* Larger font for modules */
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+/* Add bullet point (•) before module titles */
+.menu__list-item-collapsible > .menu__link--sublist::before {
+  content: "•";
+  position: absolute;
+  left: 0.75rem;
+  color: #9ca3af; /* Gray bullet by default */
+  font-size: 1.2em;
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+/* Active module: green bullet when module itself is active or any child is active */
+.menu__list-item-collapsible > .menu__link--sublist.menu__link--active::before,
+.menu__list-item-collapsible:has(.menu__link--active) > .menu__link--sublist::before {
+  color: #4ade80; /* Green bullet for active module */
+}
+
+/* Active module background */
+.menu__list-item-collapsible > .menu__link--sublist.menu__link--active,
+.menu__list-item-collapsible:has(.menu__link--active) > .menu__link--sublist {
+  background-color: rgba(74, 222, 128, 0.08); /* Subtle green background */
+}
+
+/* Chapter items (nested items under modules) */
+.menu__list .menu__list .menu__list-item .menu__link {
+  padding: 0.65rem 1rem 0.65rem 2.5rem; /* Increased padding, indented */
+  font-size: 16px; /* Larger font for chapters */
+  font-weight: 500;
+  position: relative;
+}
+
+/* Add bullet point before chapter titles */
+.menu__list .menu__list .menu__list-item .menu__link::before {
+  content: "•";
+  position: absolute;
+  left: 1.5rem;
+  color: #9ca3af; /* Gray bullet by default */
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+/* Active chapter: green bullet and background */
+.menu__list .menu__list .menu__list-item .menu__link--active::before {
+  color: #4ade80; /* Green bullet for active chapter */
+}
+
+.menu__list .menu__list .menu__list-item .menu__link--active {
+  background-color: rgba(74, 222, 128, 0.12); /* Green background for active chapter */
+  border-left: 3px solid #4ade80; /* Green border for active chapter */
+  font-weight: 600;
+}
+
+/* Enhanced text styling - increase body text font size */
+.markdown {
+  font-size: 18px; /* Increase body text size from default */
+  line-height: 1.7; /* Improve readability with more line spacing */
+}
+
+/* Specific paragraph styling */
+.markdown p {
+  font-size: 18px;
+  margin-bottom: 1.2em;
+}
+
+/* Adjust headings to maintain visual hierarchy */
+.markdown h1 {
+  font-size: 2.5rem;
+}
+
+.markdown h2 {
+  font-size: 2rem;
+}
+
+.markdown h3 {
+  font-size: 1.5rem;
+}
+
+.markdown h4 {
+  font-size: 1.25rem;
+}
+
+.markdown h5 {
+  font-size: 1.1rem;
+}
+
+.markdown h6 {
+  font-size: 1rem;
+}
+
+/* Code blocks styling */
+.prism-code {
+  font-size: 16px; /* Slightly larger code font */
+  padding: 1rem 1.2rem;
+}
+
+/* Sidebar scroll enhancement */
+.menu {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ifm-color-emphasis-300) transparent;
+}
+
+.menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background-color: var(--ifm-color-emphasis-300);
+  border-radius: 3px;
+}
+
+.menu::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ifm-color-emphasis-500);
+}
+
+/* Custom styling for module and chapter indicators in sidebar - REMOVED
+   These classes are not used with standard Docusaurus sidebars.
+   Styling is now handled via .menu__list-item-collapsible and nested .menu__link */
+
+/* Custom styling for navigation arrows */
+.pagination-nav__item {
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition: all 0.2s ease;
+}
+
+.pagination-nav__item:hover {
+  border-color: var(--ifm-color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Enhanced table styling */
+.markdown table {
+  display: table;
+  width: 100%;
+  font-size: 16px;
+}
+
+/* Blockquote styling */
+.markdown blockquote {
+  border-left: 4px solid var(--ifm-color-primary);
+  background-color: rgba(46, 133, 85, 0.05);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Improved list styling */
+.markdown ul, .markdown ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+}
+
+.markdown li {
+  margin-bottom: 0.5rem;
+  font-size: 18px;
+}
+
+/* Better emphasis styling */
+.markdown strong {
+  font-weight: 600;
+}
+
+/* Enhanced admonitions */
+.alert {
+  font-size: 17px;
+  border-radius: 6px;
+}
+
+/* Dark theme adjustments */
+[data-theme='dark'] .menu .menu__list .menu__list .menu__list-item .menu__link {
+  color: #d1d5db;
+}
+
+[data-theme='dark'] .menu .menu__list .menu__list .menu__list-item .menu__link--active {
+  color: #f3f4f6;
+}
+
+/* Dark theme module styling */
+[data-theme='dark'] .menu__list-item-collapsible > .menu__link--sublist {
+  border-left-color: #4ade80; /* Keep green border in dark mode */
+}
+
+[data-theme='dark'] .menu__list-item-collapsible > .menu__link--sublist::before {
+  color: #6b7280; /* Slightly lighter gray for dark mode */
+}
+
+[data-theme='dark'] .menu__list-item-collapsible > .menu__link--sublist.menu__link--active::before,
+[data-theme='dark'] .menu__list-item-collapsible:has(.menu__link--active) > .menu__link--sublist::before {
+  color: #4ade80; /* Green bullet in dark mode */
+}
+
+[data-theme='dark'] .menu__list-item-collapsible > .menu__link--sublist.menu__link--active,
+[data-theme='dark'] .menu__list-item-collapsible:has(.menu__link--active) > .menu__link--sublist {
+  background-color: rgba(74, 222, 128, 0.1); /* Slightly stronger background in dark mode */
+}
+
+[data-theme='dark'] .menu__list .menu__list .menu__list-item .menu__link--active {
+  background-color: rgba(74, 222, 128, 0.15); /* Slightly stronger for visibility */
+}

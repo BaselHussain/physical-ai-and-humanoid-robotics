@@ -1,0 +1,256 @@
+# Sensor Specifications for Humanoid Robot Simulation
+# Purpose: Define all sensor configurations matching real hardware specs
+# Reference: Intel RealSense D435, typical MEMS IMU, industrial LiDAR
+
+# Depth Camera - Based on Intel RealSense D435
+depth_camera:
+  name: "depth_camera"
+  type: "depth"
+  reference_hardware: "Intel RealSense D435"
+
+  resolution:
+    width: 848
+    height: 480
+    format: "R8G8B8"
+
+  field_of_view:
+    horizontal_degrees: 85.2
+    horizontal_radians: 1.487
+    vertical_degrees: 58.0
+    vertical_radians: 1.012
+
+  range:
+    near_meters: 0.195  # MinZ at 848x480
+    far_meters: 10.0
+    optimal_min_meters: 0.3
+    optimal_max_meters: 3.0
+
+  performance:
+    update_rate_hz: 30
+    max_fps: 90  # Hardware capable, but 30 Hz for performance
+
+  noise_model:
+    type: "gaussian"
+    mean: 0.0
+    stddev: 0.007  # 7mm typical for RealSense
+    bias_mean: 0.0
+    bias_stddev: 0.001
+    precision: "sub-millimeter at <3m"
+
+  mount:
+    parent_link: "head_link"
+    pose:
+      x: 0.05
+      y: 0.0
+      z: 0.1
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+
+  ros_topics:
+    image_raw: "/robot/depth_camera/image_raw"
+    camera_info: "/robot/depth_camera/camera_info"
+    point_cloud: "/robot/depth_camera/points"
+
+  gazebo_plugin:
+    filename: "gz-sim-sensors-system"
+    name: "gz::sim::systems::Sensors"
+    visualize: false  # Disable for performance
+
+# LiDAR - 3D Multi-layer Configuration
+lidar:
+  name: "lidar"
+  type: "gpu_lidar"
+  reference_hardware: "Velodyne VLP-16 (16-layer)"
+
+  scan_configuration:
+    horizontal:
+      samples: 1024
+      resolution: 1
+      min_angle_degrees: -180.0
+      max_angle_degrees: 180.0
+      min_angle_radians: -3.14159
+      max_angle_radians: 3.14159
+
+    vertical:
+      samples: 16
+      resolution: 1
+      min_angle_degrees: -15.0
+      max_angle_degrees: 15.0
+      min_angle_radians: -0.261799
+      max_angle_radians: 0.261799
+
+  range:
+    min_meters: 0.1
+    max_meters: 30.0
+    resolution_meters: 0.01
+
+  performance:
+    update_rate_hz: 10
+    points_per_scan: 16384  # 1024 * 16
+    scan_time_seconds: 0.1
+
+  noise_model:
+    type: "gaussian"
+    mean: 0.0
+    stddev: 0.01  # 1cm typical for indoor LiDAR
+    precision: "centimeter-level"
+
+  mount:
+    parent_link: "torso_link"
+    pose:
+      x: 0.0
+      y: 0.0
+      z: 0.3
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+
+  ros_topics:
+    points: "/robot/lidar/points"
+    scan: "/robot/lidar/scan"  # Optional 2D slice
+
+  gazebo_plugin:
+    filename: "gz-sim-sensors-system"
+    name: "gz::sim::systems::Sensors"
+    visualize: false
+
+# IMU - MEMS-based Inertial Measurement Unit
+imu:
+  name: "imu_sensor"
+  type: "imu"
+  reference_hardware: "InvenSense MPU-6050 (consumer-grade MEMS)"
+
+  performance:
+    update_rate_hz: 100
+    always_on: true
+
+  angular_velocity:
+    range_rad_per_sec: 34.9  # ±2000 deg/s
+    noise:
+      type: "gaussian"
+      mean: 0.0
+      stddev: 0.009  # rad/s
+      bias_mean: 0.00075
+      bias_stddev: 0.005
+      dynamic_bias_correlation_time_sec: 400.0
+    axes: ["x", "y", "z"]
+
+  linear_acceleration:
+    range_m_per_sec2: 156.96  # ±16g
+    noise:
+      type: "gaussian"
+      mean: 0.0
+      stddev: 0.017  # m/s²
+      bias_mean: 0.1
+      bias_stddev: 0.001
+      dynamic_bias_correlation_time_sec: 300.0
+    axes: ["x", "y", "z"]
+
+  orientation:
+    source: "gazebo_physics"  # Computed from physics engine
+    covariance_diagonal: [0.001, 0.001, 0.001]
+
+  mount:
+    parent_link: "torso_link"
+    pose:
+      x: 0.0
+      y: 0.0
+      z: 0.1
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+
+  ros_topics:
+    data: "/robot/imu/data"
+
+  gazebo_plugin:
+    filename: "gz-sim-imu-system"
+    name: "gz::sim::systems::Imu"
+
+# Contact Sensors - Foot Contact Detection
+contact_sensors:
+  left_foot:
+    name: "left_foot_contact"
+    type: "contact"
+
+    collision_target: "left_foot_collision"
+
+    performance:
+      update_rate_hz: 100
+      always_on: true
+
+    mount:
+      parent_link: "left_foot_link"
+
+    ros_topics:
+      contacts: "/robot/contact/left_foot"
+
+    gazebo_plugin:
+      filename: "gz-sim-contact-system"
+      name: "gz::sim::systems::Contact"
+
+  right_foot:
+    name: "right_foot_contact"
+    type: "contact"
+
+    collision_target: "right_foot_collision"
+
+    performance:
+      update_rate_hz: 100
+      always_on: true
+
+    mount:
+      parent_link: "right_foot_link"
+
+    ros_topics:
+      contacts: "/robot/contact/right_foot"
+
+    gazebo_plugin:
+      filename: "gz-sim-contact-system"
+      name: "gz::sim::systems::Contact"
+
+# Performance Budget Summary
+performance_summary:
+  total_update_rate_budget_hz:
+    depth_camera: 30
+    lidar: 10
+    imu: 100
+    left_foot_contact: 100
+    right_foot_contact: 100
+    total_equivalent: ~340 Hz
+
+  bandwidth_estimate:
+    depth_camera_mbps: 12  # 848x480 @ 30 Hz compressed
+    lidar_mbps: 5  # 16k points @ 10 Hz
+    imu_kbps: 20  # Small messages @ 100 Hz
+    contact_kbps: 10  # Sparse data
+    total_mbps: ~17.03
+
+  rtf_impact:
+    depth_camera: 0.1
+    lidar: 0.05
+    imu: 0.01
+    contact: 0.02
+    total: 0.18
+
+  target_performance:
+    overall_fps: 60
+    rtf_minimum: 1.0
+    hardware: "RTX 4070 Ti or equivalent"
+
+# Validation Criteria
+validation:
+  - All sensors must publish at configured update rates
+  - Noise models must match real-world sensor characteristics
+  - Total RTF impact must be < 0.2
+  - All topics must follow ROS 2 naming conventions
+  - Sensors must be testable with "ros2 topic hz <topic>"
+
+# Notes
+notes:
+  - Update rates are optimized for 60 FPS overall simulation
+  - Noise parameters match commercial-grade sensors
+  - GPU-accelerated LiDAR preferred for performance
+  - Contact sensors essential for bipedal locomotion control
+  - Depth camera uses RealSense D435 specs for sim-to-real transfer

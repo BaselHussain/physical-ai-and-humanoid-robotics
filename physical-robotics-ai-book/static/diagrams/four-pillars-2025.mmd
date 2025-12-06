@@ -1,0 +1,17 @@
+graph TD
+    ROS2["🤖 ROS 2 Humble<br/>Robot Operating System<br/>Middleware & Control"]
+    SIM["🎮 Gazebo & Isaac Sim<br/>Physics Simulation<br/>Sim-to-Real Transfer"]
+    ISAAC["⚡ Isaac ROS<br/>GPU-Accelerated Perception<br/>cuVSLAM, DetectNet"]
+    VLA["🧠 VLA Models<br/>Vision-Language-Action<br/>LLM Orchestration"]
+
+    ROS2 --> SIM
+    ROS2 --> ISAAC
+    ROS2 --> VLA
+    SIM --> ISAAC
+    SIM --> VLA
+    ISAAC --> VLA
+
+    style ROS2 fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style SIM fill:#7B68EE,stroke:#4B3A9E,stroke-width:3px,color:#fff
+    style ISAAC fill:#50C878,stroke:#2E7D4E,stroke-width:3px,color:#fff
+    style VLA fill:#FF6B6B,stroke:#C93A3A,stroke-width:3px,color:#fff
