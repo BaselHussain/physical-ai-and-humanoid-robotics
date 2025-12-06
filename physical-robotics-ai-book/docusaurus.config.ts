@@ -15,14 +15,14 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://physical-robotics-ai-book.example.com',
+  url: 'https://BaselHussain.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/physical-ai-and-humanoid-robotics/',
 
   // GitHub pages deployment config.
-  organizationName: 'physical-ai',
-  projectName: 'physical-robotics-ai-book',
+  organizationName: 'BaselHussain',
+  projectName: 'physical-ai-and-humanoid-robotics',
 
   onBrokenLinks: 'throw',
 
@@ -94,7 +94,7 @@ const config: Config = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/physical-ai/physical-robotics-ai-book',
+          href: 'https://github.com/BaselHussain/physical-ai-and-humanoid-robotics',
           label: 'GitHub',
           position: 'right',
         },
@@ -110,8 +110,8 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Tutorial',
-              to: '/docs/intro',
+              label: 'Get Started',
+              to: '/docs/module-01-physical-ai-intro/',
             },
           ],
         },
