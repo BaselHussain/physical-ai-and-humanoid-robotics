@@ -5,12 +5,14 @@
   "framework": "docusaurus",
   "env": {
     "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics-ten.vercel.app",
-    "DOCUSAURUS_BASE_URL": "/"
+    "DOCUSAURUS_BASE_URL": "/",
+    "NODE_VERSION": "20"
   },
   "build": {
     "env": {
       "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics-ten.vercel.app",
-      "DOCUSAURUS_BASE_URL": "/"
+      "DOCUSAURUS_BASE_URL": "/",
+      "NODE_VERSION": "20"
     }
   }
 }
