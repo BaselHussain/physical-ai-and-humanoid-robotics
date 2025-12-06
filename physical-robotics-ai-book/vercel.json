@@ -4,12 +4,12 @@
   "installCommand": "npm install",
   "framework": "docusaurus",
   "env": {
-    "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics.vercel.app",
+    "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics-ten.vercel.app",
     "DOCUSAURUS_BASE_URL": "/"
   },
   "build": {
     "env": {
-      "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics.vercel.app",
+      "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics-ten.vercel.app",
       "DOCUSAURUS_BASE_URL": "/"
     }
   }
