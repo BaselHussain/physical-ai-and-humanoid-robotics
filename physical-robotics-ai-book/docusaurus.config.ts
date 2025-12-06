@@ -15,10 +15,12 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://BaselHussain.github.io',
+  // Uses environment variable for dual deployment (GitHub Pages + Vercel)
+  url: process.env.DOCUSAURUS_URL || 'https://BaselHussain.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/physical-ai-and-humanoid-robotics/',
+  // For GitHub Pages: /physical-ai-and-humanoid-robotics/
+  // For Vercel: /
+  baseUrl: process.env.DOCUSAURUS_BASE_URL || '/physical-ai-and-humanoid-robotics/',
 
   // GitHub pages deployment config.
   organizationName: 'BaselHussain',

@@ -37,6 +37,9 @@ jobs:
 
       - name: Build website
         run: npm run build
+        env:
+          DOCUSAURUS_URL: https://BaselHussain.github.io
+          DOCUSAURUS_BASE_URL: /physical-ai-and-humanoid-robotics/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

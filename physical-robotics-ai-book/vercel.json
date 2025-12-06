@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "installCommand": "npm install",
+  "framework": "docusaurus",
+  "env": {
+    "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics.vercel.app",
+    "DOCUSAURUS_BASE_URL": "/"
+  },
+  "build": {
+    "env": {
+      "DOCUSAURUS_URL": "https://physical-ai-and-humanoid-robotics.vercel.app",
+      "DOCUSAURUS_BASE_URL": "/"
+    }
+  }
+}
