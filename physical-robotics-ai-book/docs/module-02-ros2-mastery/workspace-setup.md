@@ -723,8 +723,8 @@ colcon build
 - Dependency management with rosdep
 - Workspace overlaying and environment variables
 
-**Next**: [Lab 1: Hello ROS 2 World](./lab-01-hello-ros2.md) — Write your first publisher and subscriber nodes.
+**Next**: [Lab 1: Talker and Listener](./lab01-talker-listener.md) — Write your first publisher and subscriber nodes.
 
 ---
 
-**Previous**: [ROS 2 Architecture](./ros2-architecture.md) | **Next**: Lab 1: Hello ROS 2 World (coming soon)
+**Previous**: [ROS 2 Architecture](./ros2-architecture.md) | **Next**: [Lab 1: Talker and Listener](./lab01-talker-listener.md)

@@ -498,7 +498,7 @@ This module was developed with contributions from the ROS community, robotics re
 
 ---
 
-**Continue to [Module 3: Navigation and Path Planning](../module-03-navigation-path-planning/introduction.md)**
+**Continue to [Module 3: The Digital Twin (Gazebo & Unity)](../module-03/intro.md)**
 
 ---
 **Previous**: [Lab 8: RViz Integration](./lab08-rviz-integration.md)

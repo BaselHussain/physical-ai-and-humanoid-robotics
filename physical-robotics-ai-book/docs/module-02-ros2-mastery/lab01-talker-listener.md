@@ -495,7 +495,7 @@ Now that you understand the publisher-subscriber pattern, you're ready to explor
 - **Lab 3**: Quality of Service (QoS) profiles for different communication needs
 - **Lab 4**: Services for request-response communication patterns
 
-**Continue to [Lab 2: Understanding DDS Middleware](./lab-02-understanding-dds.md)**
+**Continue to [Lab 2: Custom Messages](./lab02-custom-messages.md)**
 
 ---
-**Previous**: [Workspace Setup](./workspace-setup.md) | **Next**: [Lab 2: Understanding DDS Middleware](./lab-02-understanding-dds.md)
+**Previous**: [Workspace Setup](./workspace-setup.md) | **Next**: [Lab 2: Custom Messages](./lab02-custom-messages.md)
