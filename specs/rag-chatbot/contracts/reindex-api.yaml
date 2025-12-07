@@ -1,0 +1,234 @@
+openapi: 3.1.0
+info:
+  title: Documentation Reindex API
+  version: 1.0.0
+  description: |
+    Internal API for GitHub Actions to trigger documentation reindexing.
+    Processes Markdown files from the repository and updates the Qdrant vector database.
+
+servers:
+  - url: https://rag-chatbot-api.onrender.com
+    description: Production (Render)
+  - url: http://localhost:8000
+    description: Local development
+
+paths:
+  /api/reindex:
+    post:
+      summary: Trigger Documentation Reindex
+      description: |
+        Triggered by GitHub Actions on push to main branch.
+        Processes all Markdown files in docs/ directory, generates embeddings, and updates Qdrant.
+      operationId: triggerReindex
+      security:
+        - GithubToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReindexRequest'
+      responses:
+        '202':
+          description: Reindex job accepted and started
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - job_id
+                  - status
+                properties:
+                  job_id:
+                    type: string
+                    format: uuid
+                    description: Unique job identifier
+                    example: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+                  status:
+                    type: string
+                    enum: [accepted]
+                    description: Job status
+                  started_at:
+                    type: string
+                    format: date-time
+                    description: Job start timestamp
+                    example: "2025-12-07T09:15:00Z"
+        '400':
+          description: Invalid request (e.g., no files to process)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized (invalid GitHub token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/reindex/{job_id}/status:
+    get:
+      summary: Get Reindex Job Status
+      description: Retrieves the current status of a reindexing job
+      operationId: getReindexStatus
+      security:
+        - GithubToken: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Job identifier from POST /api/reindex
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexingJob'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized (invalid GitHub token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    GithubToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: GitHub Actions JWT token (GITHUB_TOKEN secret)
+
+  schemas:
+    ReindexRequest:
+      type: object
+      required:
+        - repository
+        - commit_sha
+      properties:
+        repository:
+          type: string
+          description: Full repository name (owner/repo)
+          example: "BaselHussain/physical-ai-and-humanoid-robotics"
+        commit_sha:
+          type: string
+          minLength: 40
+          maxLength: 40
+          description: Git commit SHA that triggered the reindex
+          example: "2172507abcdef1234567890abcdef1234567890"
+        changed_files:
+          type: array
+          description: List of changed Markdown files (relative paths from repo root)
+          items:
+            type: string
+            example: "docs/004-isaac-platform/ros2-integration.md"
+        full_reindex:
+          type: boolean
+          default: false
+          description: If true, reindex all files regardless of changes
+
+    IndexingJob:
+      type: object
+      required:
+        - job_id
+        - started_at
+        - status
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          description: Unique job identifier
+        started_at:
+          type: string
+          format: date-time
+          description: Job start timestamp
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Job completion timestamp (null if still running)
+        files_processed:
+          type: integer
+          minimum: 0
+          description: Number of Markdown files processed
+          example: 47
+        chunks_created:
+          type: integer
+          minimum: 0
+          description: Total chunks indexed/updated
+          example: 2341
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+          description: Current job status
+        error_log:
+          type: array
+          description: Errors encountered during processing
+          items:
+            $ref: '#/components/schemas/IndexingError'
+
+    IndexingError:
+      type: object
+      required:
+        - file
+        - error
+        - timestamp
+      properties:
+        file:
+          type: string
+          description: File path where error occurred
+          example: "docs/broken-file.md"
+        error:
+          type: string
+          description: Error message
+          example: "Invalid Markdown syntax at line 42"
+        timestamp:
+          type: string
+          format: date-time
+          description: When error occurred
+        retryable:
+          type: boolean
+          default: false
+          description: Whether error is retryable
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          nullable: true
+          description: Additional error context
+
+  responses:
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "internal_error"
+            message: "An unexpected error occurred"
