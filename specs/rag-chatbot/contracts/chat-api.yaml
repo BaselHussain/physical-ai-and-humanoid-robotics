@@ -1,0 +1,336 @@
+openapi: 3.1.0
+info:
+  title: RAG Chatbot API
+  version: 1.0.0
+  description: |
+    FastAPI backend for Physical AI & Humanoid Robotics documentation chatbot.
+    Provides RAG (Retrieval-Augmented Generation) capabilities with streaming responses,
+    session management, and source citation.
+
+servers:
+  - url: https://rag-chatbot-api.onrender.com
+    description: Production (Render)
+  - url: http://localhost:8000
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Returns API health status and timestamp
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-12-07T10:00:00Z"
+
+  /api/chatkit/session:
+    post:
+      summary: Create ChatKit Session
+      description: |
+        Creates a new chat session and returns a client_secret token for ChatKit authentication.
+        Token expires after 24 hours.
+      operationId: createSession
+      responses:
+        '200':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - client_secret
+                  - session_id
+                properties:
+                  client_secret:
+                    type: string
+                    description: JWT token for ChatKit authentication
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  session_id:
+                    type: string
+                    format: uuid
+                    description: Unique session identifier
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: Token expiration timestamp
+                    example: "2025-12-08T10:00:00Z"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/chatkit/refresh:
+    post:
+      summary: Refresh ChatKit Token
+      description: Refreshes an expired client_secret token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Expired client_secret to refresh
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - client_secret
+                properties:
+                  client_secret:
+                    type: string
+                    description: New JWT token
+        '401':
+          description: Invalid or unrefreshable token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/chat:
+    post:
+      summary: Send Chat Message (Streaming)
+      description: |
+        Sends a user message and streams the assistant's response token-by-token.
+        Includes source citations in the response.
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Streaming response (SSE format)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-Sent Events stream with the following event types:
+                  - `token`: Individual tokens as they're generated
+                  - `source`: Source citation reference
+                  - `complete`: Final response with metadata
+                  - `error`: Error during generation
+              examples:
+                streamingResponse:
+                  summary: Example streaming response
+                  value: |
+                    event: token
+                    data: {"delta": "Isaac"}
+
+                    event: token
+                    data: {"delta": " Sim"}
+
+                    event: token
+                    data: {"delta": " integrates"}
+
+                    event: source
+                    data: {"chunk_id": "docs/004-isaac-platform/ros2-integration.md:3", "title": "ROS 2 Humble Integration"}
+
+                    event: complete
+                    data: {"message_id": "9f4b2c1a-5e3d-4f8b-9c1a-2d3e4f5a6b7c", "source_count": 2, "tokens_used": 342}
+        '400':
+          description: Invalid request (e.g., message too long, invalid session_id)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded (Gemini API)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Rate limit exceeded"
+                message: "Processing... Please wait."
+                retry_after: 5
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/sessions/{session_id}/history:
+    get:
+      summary: Get Session History
+      description: Retrieves all messages for a given session
+      operationId: getSessionHistory
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session identifier
+      responses:
+        '200':
+          description: Session history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    format: uuid
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatMessage'
+        '404':
+          description: Session not found (expired or invalid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+        - session_id
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: User's question or message
+          example: "How does Isaac Sim integrate with ROS 2?"
+        session_id:
+          type: string
+          format: uuid
+          description: Chat session identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        context:
+          type: object
+          description: Optional context (e.g., highlighted text)
+          properties:
+            highlighted_text:
+              type: string
+              maxLength: 1000
+              description: Text highlighted by user
+              example: "NVIDIA Isaac Sim 2025"
+
+    ChatMessage:
+      type: object
+      required:
+        - message_id
+        - session_id
+        - role
+        - content
+        - timestamp
+      properties:
+        message_id:
+          type: string
+          format: uuid
+          description: Unique message identifier
+        session_id:
+          type: string
+          format: uuid
+          description: Parent session ID
+        role:
+          type: string
+          enum: [user, assistant]
+          description: Message sender role
+        content:
+          type: string
+          description: Message text content
+        timestamp:
+          type: string
+          format: date-time
+          description: Message creation time
+        source_refs:
+          type: array
+          nullable: true
+          description: Documentation chunks referenced (assistant messages only)
+          items:
+            $ref: '#/components/schemas/SourceReference'
+
+    SourceReference:
+      type: object
+      required:
+        - chunk_id
+        - page_url
+      properties:
+        chunk_id:
+          type: string
+          description: Documentation chunk identifier
+          example: "docs/004-isaac-platform/ros2-integration.md:3"
+        heading:
+          type: string
+          nullable: true
+          description: Section heading from documentation
+          example: "ROS 2 Humble Integration"
+        page_url:
+          type: string
+          format: uri
+          description: Published documentation URL
+          example: "https://baselhussain.github.io/physical-ai-and-humanoid-robotics/docs/004-isaac-platform/ros2-integration#ros-2-humble-integration"
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Similarity score from vector search
+          example: 0.87
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+          example: "validation_error"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Message length exceeds maximum of 5000 characters"
+        details:
+          type: object
+          nullable: true
+          description: Additional error context
+        retry_after:
+          type: integer
+          nullable: true
+          description: Seconds to wait before retrying (for rate limits)
+
+  responses:
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "internal_error"
+            message: "An unexpected error occurred"

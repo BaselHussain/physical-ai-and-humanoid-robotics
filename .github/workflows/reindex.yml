@@ -1,0 +1,30 @@
+name: Reindex Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**/*.md'
+      - 'physical-robotics-ai-book/docs/**/*.md'
+
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install cohere qdrant-client
+
+      - name: Run reindex script
+        run: python backend/scripts/reindex_docs.py
+        env:
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
