@@ -5,6 +5,74 @@ interface Message {
   content: string;
 }
 
+// Simple markdown to HTML converter
+function renderMarkdown(text: string): { __html: string } {
+  if (!text) return { __html: '' };
+
+  // Convert headers (### Header -> <h3>Header</h3>)
+  let html = text
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+
+  // Convert bold (**text** -> <strong>text</strong>)
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Convert italic (*text* -> <em>text</em>)
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Convert code blocks (```lang\ncode\n``` -> <pre><code>code</code></pre>)
+  html = html.replace(/```[\s\S]*?\n([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+  // Convert inline code (`code` -> <code>code</code>)
+  html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+  // Convert links ([text](url) -> <a href="url">text</a>)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // Convert unordered lists (- item -> <ul><li>item</li></ul>)
+  const listRegex = /^(-\s.+)$/gm;
+  if (listRegex.test(html)) {
+    html = html.replace(/(?:^|\n)-\s(.+?)(?=\n|$)/g, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+  }
+
+  // Convert tables (simplified)
+  html = html.replace(/\n\|.*\|\n\|[-|]+\|\n(\|.*\|\n?)+/g, (match) => {
+    const lines = match.trim().split('\n');
+    let tableHtml = '<table class="markdown-table">';
+    lines.forEach((line, index) => {
+      if (line.trim() && !line.includes('|:-') && !line.includes(':-|')) { // Skip separator lines
+        const cells = line.split('|').filter(cell => cell !== '');
+        if (cells.length > 0) {
+          tableHtml += '<tr>';
+          cells.forEach(cell => {
+            if (cell.trim()) {
+              tableHtml += `<td>${cell.trim()}</td>`;
+            }
+          });
+          tableHtml += '</tr>';
+        }
+      }
+    });
+    tableHtml += '</table>';
+    return tableHtml;
+  });
+
+  // Convert newlines to <br> and paragraphs
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  // Wrap in paragraph tags if not already wrapped
+  if (!html.startsWith('<') && !html.includes('<p>')) {
+    html = `<p>${html}</p>`;
+  } else if (html.startsWith('<p>') && !html.endsWith('</p>')) {
+    html += '</p>';
+  }
+
+  return { __html: html };
+}
+
 export function CustomChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -32,7 +100,7 @@ export function CustomChatWidget() {
   // Initialize session on mount
   useEffect(() => {
     if (isOpen && !sessionId) {
-      fetch('http://localhost:8001/api/chatkit/session', {
+      fetch('http://localhost:8000/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -56,7 +124,7 @@ export function CustomChatWidget() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8001/api/chat', {
+      const response = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -202,6 +270,64 @@ export function CustomChatWidget() {
       flexDirection: 'column',
       zIndex: 9999,
     }}>
+      <style>
+        {`
+          .markdown-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 8px 0;
+          }
+          .markdown-table td {
+            border: 1px solid #ddd;
+            padding: 4px 8px;
+            text-align: left;
+          }
+          .markdown-table tr:nth-child(even) {
+            background-color: #f6f8fa;
+          }
+          h1, h2, h3 {
+            margin: 8px 0;
+            line-height: 1.3;
+          }
+          h1 { font-size: 1.5em; }
+          h2 { font-size: 1.3em; }
+          h3 { font-size: 1.1em; }
+          ul {
+            margin: 8px 0;
+            padding-left: 20px;
+          }
+          li {
+            margin: 4px 0;
+          }
+          strong {
+            font-weight: bold;
+          }
+          em {
+            font-style: italic;
+          }
+          code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
+          }
+          pre {
+            background-color: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 8px 0;
+          }
+          pre code {
+            background: none;
+            padding: 0;
+          }
+          p {
+            margin: 8px 0;
+          }
+        `}
+      </style>
       {/* Header */}
       <div style={{
         padding: '16px',
@@ -257,9 +383,12 @@ export function CustomChatWidget() {
               fontSize: '14px',
               lineHeight: '1.5',
             }}
-          >
-            {msg.content}
-          </div>
+            dangerouslySetInnerHTML={
+              msg.role === 'assistant'
+                ? renderMarkdown(msg.content)
+                : { __html: msg.content }
+            }
+          />
         ))}
         {isLoading && (
           <div style={{

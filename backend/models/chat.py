@@ -3,6 +3,11 @@ from datetime import datetime
 from typing import List, Optional
 
 
+class SessionResponse(BaseModel):
+    """Response model for session creation endpoint"""
+    session_id: str = Field(..., description="Unique session identifier")
+
+
 class ChatRequest(BaseModel):
     """Request model for chat endpoint"""
     message: str = Field(..., min_length=1, max_length=5000, description="User message")

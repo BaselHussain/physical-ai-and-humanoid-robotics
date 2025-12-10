@@ -39,29 +39,8 @@ function ChatKitInner({ ChatKit, useChatKit }: any) {
 
   const { control } = useChatKit({
     api: {
-      async getClientSecret(existing: string | undefined) {
-        try {
-          setDebugInfo('Calling backend API...');
-          const endpoint = existing ? '/api/chatkit/refresh' : '/api/chatkit/session';
-          const body = existing ? JSON.stringify({ token: existing }) : undefined;
-
-          const res = await fetch(`http://localhost:8000${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body,
-          });
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const secret = (await res.json()).client_secret;
-          setDebugInfo('API call successful!');
-          return secret;
-        } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to connect';
-          setError(`Backend error: ${message}`);
-          setDebugInfo(`Error: ${message}`);
-          throw err;
-        }
-      },
+      url: 'http://localhost:8000/',
+      domainKey: 'localhost',
     },
     theme: {
       colorScheme: 'light',
@@ -90,11 +69,15 @@ function ChatKitInner({ ChatKit, useChatKit }: any) {
   return (
     <>
       <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
-        <ChatKit control={control} className="h-[600px] w-[400px]" />
-      </div>
+      <ChatKit 
+  control={control} 
+  className="h-[600px] w-[400px]" 
+/>
+</div>
       {/* Debug info */}
       <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10000, backgroundColor: '#ffeb3b', color: '#000', padding: '10px', borderRadius: '4px', fontSize: '12px', maxWidth: '300px' }}>
         <strong>Debug:</strong> {debugInfo}
+        <p>{error}</p>
       </div>
     </>
   );
