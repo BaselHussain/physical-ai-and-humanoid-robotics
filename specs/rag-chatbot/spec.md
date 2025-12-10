@@ -12,7 +12,7 @@
 - Q: How should the chatbot respond to questions outside the documentation domain? → A: Polite refusal with suggested topics from the documentation
 - Q: What should be the maximum chunk size limit for documentation segments? → A: 384 tokens per chunk (medium granularity)
 - Q: How should the system respond when the Gemini API rate limit is exceeded? → A: Queue request with exponential backoff retry + show "Processing..." message to user
-- Q: Which frontend chat UI library should we use? → A: Custom React component (CustomChatWidget.tsx) - OpenAI ChatKit is incompatible with our custom Gemini/Qdrant backend (ChatKit requires OpenAI Sessions API)
+- Q: Which frontend chat UI library should we use? → A: Chatkit-JS for frontend chat UI, with Chatkit-Python backend connecting to OpenAI Agents SDK (using LiteLLM for Gemini compatibility)
 
 ## User Scenarios & Testing *(mandatory)*
 

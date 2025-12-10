@@ -6,46 +6,40 @@
 
 ## Executive Summary
 
-This document consolidates research findings for implementing a production-ready RAG chatbot using the locked technology stack: ChatKit JS (frontend), FastAPI + OpenAI Agents SDK (backend), Cohere (embeddings), Qdrant Cloud (vector DB), and Gemini API (LLM).
+This document consolidates research findings for implementing a production-ready RAG chatbot using the locked technology stack: Chatkit-JS (frontend), FastAPI + Chatkit-Python + LiteLLM (backend), Cohere (embeddings), Qdrant Cloud (vector DB), and Gemini API (LLM).
 
 ---
 
-## 1. OpenAI Agents SDK (Python)
+## 1. Chatkit-Python (Python)
 
 ### Decision
-Use **OpenAI Agents SDK v0.6.2+** (`/websites/openai_github_io_openai-agents-python`) for backend agent orchestration with streaming responses and session management.
+Use **Chatkit-Python v1.4.0+** (`/openai/chatkit-python`) for backend agent orchestration with streaming responses and session management, using LiteLLM as a translation layer for Gemini API compatibility.
 
 ### Rationale
-- **Native Streaming Support**: Built-in `stream_response()` async iterator for token-by-token streaming
-- **Session Management API**: Automatic conversation history with `session_id` and `conversation_id` parameters
-- **LiteLLM Integration**: Supports non-OpenAI models (Gemini) via extension system
-- **High Code Coverage**: 2,349 code snippets with 72.3 benchmark score (High reputation source)
+- **Native Streaming Support**: Built-in `stream_agent_response()` async iterator for token-by-token streaming
+- **Session Management API**: Automatic conversation history with `thread_id` and context management
+- **LiteLLM Integration**: Supports non-OpenAI models (Gemini) via `LitellmModel` wrapper
+- **High Code Coverage**: 40 code snippets with 59.3 benchmark score (High reputation source)
 - **Production Features**: Built-in tracing, error handling, and usage tracking
+- **OpenAI-Compatible API**: Works seamlessly with Chatkit-JS frontend components
 
 ### Key Implementation Patterns
 
 **Streaming Responses**:
 ```python
-async def stream_response(
-    system_instructions: str,
-    input: str | list[TResponseInputItem],
-    model_settings: ModelSettings,
-    tools: list[Tool],
-    output_schema: AgentOutputSchemaBase | None,
-    handoffs: list[Handoff],
-    tracing: ModelTracing,
-    previous_response_id: str | None = None,
-    conversation_id: str | None = None,
-) -> AsyncIterator[TResponseStreamEvent]:
+async def stream_agent_response(
+    context: AgentContext,
+    result: RunnerStreamed,
+) -> AsyncIterator[ThreadStreamEvent]:
     # Yields chunks as they arrive
-    async for chunk in ChatCmplStreamHandler.handle_stream(response, stream):
-        yield chunk
+    async for event in result.stream_events():
+        yield event
 ```
 
 **Session Management**:
-- `Runner.run_streamed(agent, input, conversation_id=session_id)` maintains context
-- `previous_response_id` parameter for follow-up questions
-- `Session` object for automatic conversation history persistence
+- `Runner.run_streamed(agent, input, context=agent_context)` maintains context
+- Thread-based conversation history with `thread_id`
+- Custom `AgentContext` for request-specific data passing
 
 ### Alternatives Considered
 - **LangChain**: Rejected - heavier abstraction layer, more complex for simple RAG
@@ -54,10 +48,10 @@ async def stream_response(
 
 ---
 
-## 2. ChatKit JS (Frontend)
+## 2. Chatkit-JS (Frontend)
 
 ### Decision
-Use **ChatKit JS** (`/openai/chatkit-js`) as the official OpenAI chat widget library for React/Docusaurus integration.
+Use **Chatkit-JS** (`/openai/chatkit-js`) as the official OpenAI chat widget library for React/Docusaurus integration.
 
 ### Rationale
 - **Batteries-Included UI**: Pre-built chat interface with streaming, typing indicators, error states
@@ -116,7 +110,7 @@ entities: {
 ## 3. Docusaurus Integration
 
 ### Decision
-Use **Docusaurus v3.x** swizzling (`/websites/docusaurus_io`) to inject ChatKit widget into all documentation pages via layout component override.
+Use **Docusaurus v3.x** swizzling (`/websites/docusaurus_io`) to inject Chatkit-JS widget into all documentation pages via layout component override.
 
 ### Rationale
 - **Swizzle System**: Copy and wrap core components without forking Docusaurus

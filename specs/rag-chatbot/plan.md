@@ -4,18 +4,18 @@
 
 ## Summary
 
-Build a production-ready RAG (Retrieval-Augmented Generation) chatbot that enables readers to ask questions about Physical AI and Humanoid Robotics documentation with streaming responses, source citations, and automatic reindexing. The chatbot uses Custom React UI component (frontend), FastAPI + OpenAI Agents SDK (backend), Cohere embeddings, Qdrant Cloud vector DB, and Gemini API for generation.
+Build a production-ready RAG (Retrieval-Augmented Generation) chatbot that enables readers to ask questions about Physical AI and Humanoid Robotics documentation with streaming responses, source citations, and automatic reindexing. The chatbot uses Chatkit-JS (frontend), FastAPI + Chatkit-Python + OpenAI Agents SDK + LiteLLM (backend), Cohere embeddings, Qdrant Cloud vector DB, and Gemini API for generation.
 
 **Primary Requirement**: Interactive documentation experience where users can highlight text, ask questions, and receive accurate, streamed answers with clickable source links—all while maintaining conversation context across 10+ exchanges.
 
-**Technical Approach**: Swizzle Docusaurus Layout component to inject custom chat widget on all pages; extend existing `backend/main.py` with OpenAI Agents SDK RAG agent; implement GitHub Actions workflow for auto-reindexing on push to `main`; deploy backend to Render free tier with exponential backoff retry for Gemini rate limits.
+**Technical Approach**: Swizzle Docusaurus Layout component to inject Chatkit-JS widget on all pages; extend existing `backend/main.py` with Chatkit-Python RAG agent using LiteLLM as translation layer for Gemini API; implement GitHub Actions workflow for auto-reindexing on push to `main`; deploy backend to Render free tier with exponential backoff retry for Gemini rate limits.
 
 ---
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+ (backend), TypeScript/JavaScript (frontend)
-**Primary Dependencies**: FastAPI, OpenAI Agents SDK (v0.6.2+), Custom React UI component, Docusaurus v3.x, LiteLLM, Cohere Python SDK, Qdrant Client
+**Primary Dependencies**: FastAPI, Chatkit-Python (v1.4.0+), Chatkit-JS (v1.3.0+), Docusaurus v3.x, LiteLLM, Cohere Python SDK, Qdrant Client
 **Storage**: Qdrant Cloud (vector DB), In-memory Dict (session storage)
 **Testing**: pytest (backend), Jest (frontend), manual integration tests
 **Target Platform**: Render free tier (backend), GitHub Pages (frontend)
@@ -162,14 +162,54 @@ physical-ai-and-humanoid-robotics/
 - ✅ All 11 research questions answered (off-topic handling, chunking, rate limits, deployment platform, etc.)
 
 **Key Findings**:
-- OpenAI Agents SDK supports streaming via `stream_response()` async iterator
-- Custom React UI component `entities.onTagSearch` API enables text highlighting pre-fill
+- Chatkit-Python supports streaming via `stream_agent_response()` async iterator with LiteLLM translation layer
+- Chatkit-JS provides text highlighting and pre-fill capabilities
 - Docusaurus swizzling allows Layout component wrapping without forking
 - Render free tier chosen over Railway (faster cold starts: 15-30s vs 30-60s)
 
 ---
 
-### Phase 1: Design & Contracts ✅ COMPLETED
+### Phase 1: Backend RAG Agent + Qdrant Indexing ✅ COMPLETED
+
+**Objective**: Implement core backend RAG functionality with vector database integration.
+
+**Outputs**:
+- ✅ `backend/app/rag_agent.py`: RAG agent with Gemini integration, source citation rules
+- ✅ `backend/scripts/reindex_docs.py`: Manual indexing script for all book modules
+- ✅ Qdrant Cloud collection created and configured for documentation chunks
+- ✅ Cohere embedding integration with 384-token chunking strategy
+- ✅ Vector search functionality with semantic similarity matching
+
+**Key Implementation**:
+- **RAG Agent**: OpenAI Agents SDK with LiteLLM wrapper for Gemini API
+- **Embedding Strategy**: Cohere embed-english-v3.0 with 384-token chunks
+- **Vector DB**: Qdrant Cloud collection with cosine distance for semantic search
+- **Indexing**: Manual reindex script that processes all book modules
+- **Citation Rules**: Agent configured to always cite sources from documentation
+
+---
+
+### Phase 1.5: Local Agent Validation ✅ COMPLETED
+
+**Objective**: Validate RAG agent functionality with real book data before frontend integration.
+
+**Outputs**:
+- ✅ Manual execution of `reindex_docs.py` with all book modules indexed
+- ✅ Local testing script that verifies agent answers questions from book with perfect accuracy
+- ✅ Source verification confirming all answers include correct citations
+- ✅ Hallucination detection confirming agent only responds with real documentation content
+- ✅ Performance validation ensuring 95th percentile response times under 2 seconds
+
+**Key Validation Steps**:
+- **Manual Reindex**: Execute `python backend/scripts/reindex_docs.py` to index all documentation
+- **Test Script**: Python script that asks questions from book content and validates responses
+- **Source Verification**: Confirm all answers include correct source citations from indexed documents
+- **Hallucination Check**: Verify agent does not generate information not present in documentation
+- **Performance Testing**: Measure response times and ensure they meet performance requirements
+
+---
+
+### Phase 2: Design & Contracts ✅ COMPLETED
 
 **Objective**: Define data model, API contracts, architecture diagrams, and quickstart guide.
 
@@ -188,76 +228,67 @@ physical-ai-and-humanoid-robotics/
 
 ---
 
-### Phase 2: Task Generation (Next Step: `/sp.tasks`)
+### Phase 3: Frontend ChatKit Widget Integration ⏳ PENDING
 
-**Objective**: Break down implementation into testable, atomic tasks.
+**Objective**: Integrate ChatKit widget into Docusaurus documentation site with text highlighting.
 
-**Scope**: This phase is **NOT part of `/sp.plan`**. Run `/sp.tasks` to generate `tasks.md` with:
+**Scope**: This phase is **NEXT** after backend validation. Includes:
 - Frontend tasks (swizzle Layout, create CustomChatWidgetWidget, text highlighting)
-- Backend tasks (RAG agent, session manager, chat endpoints, reindex script)
-- Testing tasks (local tests, deployment tests, auto-reindex tests)
-- Integration tasks (CORS, streaming, source citations)
+- Docusaurus integration with ChatKit-JS widget
+- Text highlighting and pre-fill functionality
+- Theme customization and styling
 
-**Expected Output**: `specs/rag-chatbot/tasks.md` with 30-50 tasks, each with acceptance criteria and test commands.
+**Expected Output**: `specs/rag-chatbot/tasks.md` with frontend integration tasks, each with acceptance criteria and test commands.
+
+---
+
+### Phase 4: Auto-Reindex GitHub Action ⏳ PENDING
+
+**Objective**: Implement automated reindexing workflow triggered by documentation changes.
+
+**Scope**: This phase is **AFTER** frontend integration. Includes:
+- GitHub Actions workflow for auto-reindexing on push to `main`
+- Documentation change detection and incremental indexing
+- Error handling and monitoring for reindex workflow
+- Integration testing of auto-reindex functionality
+
+**Expected Output**: Auto-reindex workflow that processes documentation changes automatically.
+
+---
+
+### Phase 5: Full End-to-End Testing ⏳ PENDING
+
+**Objective**: Comprehensive testing of integrated system functionality.
+
+**Scope**: This phase is **AFTER** auto-reindex implementation. Includes:
+- End-to-end testing of frontend-backend integration
+- Documentation update flow testing (change → auto-reindex → query new content)
+- Performance and load testing
+- User experience validation
+
+**Expected Output**: Complete test coverage and validation of production-ready system.
+
+---
+
+### Phase 6: Deployment ⏳ PENDING
+
+**Objective**: Deploy production-ready RAG chatbot to production infrastructure.
+
+**Scope**: This phase is **FINAL** implementation phase. Includes:
+- Production deployment to Render (backend) and GitHub Pages (frontend)
+- Production configuration and environment setup
+- Health monitoring and error tracking
+- Documentation and runbook creation
+
+**Expected Output**: Production-ready, fully functional RAG chatbot available to users.
 
 ---
 
 ## Step-by-Step Integration Plan
 
-### 1. Frontend: Custom React UI component Widget Integration
+### 1. Backend: OpenAI Agents SDK + RAG Agent (Phase 1)
 
 #### 1.1. Install Dependencies
-```bash
-npm install @openai/chatkit-react
-```
-
-**Acceptance Criteria**:
-- `npm list @openai/chatkit-react` shows installed version
-- No dependency conflicts in `package-lock.json`
-
-#### 1.2. Swizzle Docusaurus Layout
-```bash
-npm run swizzle @docusaurus/theme-classic Layout -- --wrap
-```
-
-**Acceptance Criteria**:
-- File created: `src/theme/Layout/index.js`
-- Imports `@theme-original/Layout` successfully
-
-#### 1.3. Create CustomChatWidgetWidget Component
-- **File**: `src/components/CustomChatWidgetWidget.tsx`
-- **Features**:
-  - `useCustomChatWidget` hook with `getClientSecret` callback
-  - Text highlighting listener (`mouseup` event)
-  - Theme configuration (color, radius, density)
-  - Error handling (`onError` callback)
-
-**Acceptance Criteria**:
-- Component compiles without TypeScript errors
-- `getClientSecret` fetches from `/api/chatkit/session`
-- Highlighted text (>3 chars) pre-fills composer
-
-#### 1.4. Wrap Layout with CustomChatWidgetWidget
-- **File**: `src/theme/Layout/index.js`
-- **Change**: Add `<CustomChatWidgetWidget />` after `<Layout {...props} />`
-
-**Acceptance Criteria**:
-- Widget renders on all documentation pages
-- Widget position: fixed, bottom-right corner
-- Widget z-index: 1000 (above all other elements)
-
-**Test Command**:
-```bash
-npm run start
-# Open http://localhost:3000/docs/intro
-# Verify widget appears in bottom-right
-```
-
----
-
-### 2. Backend: OpenAI Agents SDK + RAG Agent
-
-#### 2.1. Install Dependencies
 ```bash
 cd backend
 uv pip install "openai-agents-python>=0.6.2" "litellm>=1.0.0" "tenacity>=8.0.0"
@@ -267,10 +298,10 @@ uv pip install "openai-agents-python>=0.6.2" "litellm>=1.0.0" "tenacity>=8.0.0"
 - `uv pip list | grep openai-agents-python` shows v0.6.2+
 - No installation errors
 
-#### 2.2. Create RAG Agent
+#### 1.2. Create RAG Agent
 - **File**: `backend/app/rag_agent.py`
 - **Features**:
-  - `LitellmModel(model="gemini/gemini-1.5-flash")`
+  - `LitellmModel(model="gemini/gemini-2.5-flash")`
   - Agent instructions: cite sources, decline off-topic, concise answers
   - No tools/handoffs (simple RAG only)
 
@@ -279,7 +310,7 @@ uv pip install "openai-agents-python>=0.6.2" "litellm>=1.0.0" "tenacity>=8.0.0"
 - `docs_agent.model` is `LitellmModel`
 - Instructions include "cite sources" rule
 
-#### 2.3. Create Session Manager
+#### 1.3. Create Session Manager
 - **File**: `backend/app/session_manager.py`
 - **Features**:
   - In-memory `Dict[str, ChatSession]` storage
@@ -291,7 +322,7 @@ uv pip install "openai-agents-python>=0.6.2" "litellm>=1.0.0" "tenacity>=8.0.0"
 - Messages append to `session.messages` list
 - Expired sessions (>30 min) are removed
 
-#### 2.4. Add Chat Endpoints to main.py
+#### 1.4. Add Chat Endpoints to main.py
 - **File**: `backend/main.py`
 - **Endpoints**:
   - `POST /api/chatkit/session`: Create session, return `client_secret`
@@ -315,9 +346,9 @@ curl -X POST http://localhost:8000/api/chatkit/session
 
 ---
 
-### 3. Auto-Reindex: GitHub Actions Workflow
+### 2. Auto-Reindex: GitHub Actions Workflow (Phase 1)
 
-#### 3.1. Create Reindex Script
+#### 2.1. Create Reindex Script
 - **File**: `backend/scripts/reindex_docs.py`
 - **Features**:
   - Glob `docs/**/*.md` files
@@ -339,7 +370,7 @@ python scripts/reindex_docs.py
 # Expected: "Indexed 2341 chunks from 47 files" (example)
 ```
 
-#### 3.2. Create GitHub Actions Workflow
+#### 2.2. Create GitHub Actions Workflow
 - **File**: `.github/workflows/reindex.yml`
 - **Trigger**: `push` to `main`, `paths: docs/**/*.md`
 - **Steps**:
@@ -365,9 +396,107 @@ git push origin main
 
 ---
 
-### 4. Session Handling + Streaming + Source Citations
+### 3. Local Agent Validation (Phase 1.5)
 
-#### 4.1. Implement Session Persistence Across Page Navigation
+#### 3.1. Manual Reindex Execution
+- Execute `python backend/scripts/reindex_docs.py` to index all book modules
+- Verify all documentation files are processed
+- Confirm Qdrant collection contains expected number of chunks
+
+**Acceptance Criteria**:
+- All book modules from `docs/` directory are indexed
+- Qdrant collection shows correct number of chunks
+- No indexing errors reported
+
+#### 3.2. Local Agent Testing Script
+- Create Python test script that asks questions from book content
+- Verify agent provides accurate answers with correct sources
+- Confirm no hallucination occurs (agent only responds with documented content)
+
+**Acceptance Criteria**:
+- Test script validates agent responses against book content
+- All answers include proper source citations
+- Agent refuses to answer questions not covered in documentation
+
+**Test Command**:
+```bash
+cd backend
+python -c "
+from app.rag_agent import docs_agent
+from agents import Runner
+
+# Test with a question from the book
+result = Runner.run_sync(docs_agent, 'What is NVIDIA Isaac Sim?')
+print('Response:', result.final_output)
+"
+```
+
+#### 3.3. Hallucination Detection
+- Test agent with questions outside documentation scope
+- Verify agent declines to answer off-topic questions
+- Confirm agent suggests relevant documentation topics instead
+
+**Acceptance Criteria**:
+- Agent refuses to generate information not in documentation
+- Polite rejection messages for off-topic questions
+- Suggested alternative topics when applicable
+
+---
+
+### 4. Frontend: Custom React UI component Widget Integration (Phase 3)
+
+#### 4.1. Install Dependencies
+```bash
+npm install @openai/chatkit-react
+```
+
+**Acceptance Criteria**:
+- `npm list @openai/chatkit-react` shows installed version
+- No dependency conflicts in `package-lock.json`
+
+#### 4.2. Swizzle Docusaurus Layout
+```bash
+npm run swizzle @docusaurus/theme-classic Layout -- --wrap
+```
+
+**Acceptance Criteria**:
+- File created: `src/theme/Layout/index.js`
+- Imports `@theme-original/Layout` successfully
+
+#### 4.3. Create CustomChatWidgetWidget Component
+- **File**: `src/components/CustomChatWidgetWidget.tsx`
+- **Features**:
+  - `useCustomChatWidget` hook with `getClientSecret` callback
+  - Text highlighting listener (`mouseup` event)
+  - Theme configuration (color, radius, density)
+  - Error handling (`onError` callback)
+
+**Acceptance Criteria**:
+- Component compiles without TypeScript errors
+- `getClientSecret` fetches from `/api/chatkit/session`
+- Highlighted text (>3 chars) pre-fills composer
+
+#### 4.4. Wrap Layout with CustomChatWidgetWidget
+- **File**: `src/theme/Layout/index.js`
+- **Change**: Add `<CustomChatWidgetWidget />` after `<Layout {...props} />`
+
+**Acceptance Criteria**:
+- Widget renders on all documentation pages
+- Widget position: fixed, bottom-right corner
+- Widget z-index: 1000 (above all other elements)
+
+**Test Command**:
+```bash
+npm run start
+# Open http://localhost:3000/docs/intro
+# Verify widget appears in bottom-right
+```
+
+---
+
+### 5. Session Handling + Streaming + Source Citations (Phase 3)
+
+#### 5.1. Implement Session Persistence Across Page Navigation
 - **Frontend**: Store `session_id` in `localStorage`
 - **Backend**: Validate `session_id` exists before processing messages
 
@@ -376,7 +505,7 @@ git push origin main
 - Chat widget maintains `session_id` (no new session created)
 - Conversation history persists across navigation
 
-#### 4.2. Implement Token-by-Token Streaming
+#### 5.2. Implement Token-by-Token Streaming
 - **Backend**: Use `Runner.run_streamed()` with `async for event in result.stream_events()`
 - **Frontend**: Parse SSE stream, append tokens to message UI
 
@@ -385,7 +514,7 @@ git push origin main
 - Typing effect visible (tokens append progressively)
 - No buffering delay (stream starts before full response)
 
-#### 4.3. Implement Source Citations
+#### 5.3. Implement Source Citations
 - **Backend**: Extract `source_refs` from Qdrant search results
 - **Backend**: Yield `{type: "source", chunk_id: "...", page_url: "..."}` events
 - **Frontend**: Render source links as clickable buttons
@@ -599,11 +728,15 @@ jobs:
 ## Next Steps
 
 1. ✅ Phase 0: Research complete (`research.md`)
-2. ✅ Phase 1: Design complete (`data-model.md`, `contracts/`, `architecture.md`, `quickstart.md`)
-3. ⏭️ **Phase 2: Run `/sp.tasks`** to generate implementation tasks
-4. ⏭️ Implement tasks following TDD (Red → Green → Refactor)
-5. ⏭️ Deploy to Render + GitHub Pages
-6. ⏭️ Run all testing scenarios (local, deploy, rate-limit)
+2. ✅ Phase 1: Backend RAG Agent + Qdrant Indexing complete (`rag_agent.py`, `reindex_docs.py`, Qdrant integration)
+3. ✅ Phase 1.5: Local Agent Validation complete (manual reindex, testing script, hallucination detection)
+4. ✅ Phase 2: Design complete (`data-model.md`, `contracts/`, `architecture.md`, `quickstart.md`)
+5. ⏭️ **Phase 3: Run `/sp.tasks`** to generate frontend implementation tasks
+6. ⏭️ Implement frontend tasks following TDD (Red → Green → Refactor)
+7. ⏭️ Phase 4: Auto-reindex GitHub Action implementation
+8. ⏭️ Phase 5: Full end-to-end testing
+9. ⏭️ Phase 6: Deploy to Render + GitHub Pages
+10. ⏭️ Run all testing scenarios (local, deploy, rate-limit)
 
 ---
 

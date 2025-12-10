@@ -25,112 +25,7 @@
 
 ## Local Development Setup
 
-### 1. Install Frontend Dependencies
-
-```bash
-# From project root
-npm install
-
-# Install ChatKit React library
-npm install @openai/chatkit-react
-
-# Verify installation
-npm list @openai/chatkit-react
-# Expected: @openai/chatkit-react@<version>
-```
-
-### 2. Swizzle Docusaurus Layout Component
-
-```bash
-# Wrap the Layout component to inject ChatKit
-npm run swizzle @docusaurus/theme-classic Layout -- --wrap
-
-# This creates: src/theme/Layout/index.js
-```
-
-### 3. Create ChatKit Widget Component
-
-Create `src/components/ChatKitWidget.tsx`:
-
-```tsx
-import React, { useEffect } from 'react';
-import { ChatKit, useChatKit } from '@openai/chatkit-react';
-import '@openai/chatkit-react/styles.css';
-
-export function ChatKitWidget() {
-  const { control, setComposerValue, focusComposer } = useChatKit({
-    api: {
-      async getClientSecret(existing) {
-        if (existing) {
-          // Refresh expired token
-          const res = await fetch('http://localhost:8000/api/chatkit/refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: existing }),
-          });
-          return (await res.json()).client_secret;
-        }
-
-        // Create new session
-        const res = await fetch('http://localhost:8000/api/chatkit/session', {
-          method: 'POST',
-        });
-        return (await res.json()).client_secret;
-      },
-    },
-    theme: {
-      colorScheme: 'light',
-      color: { accent: { primary: '#2D8CFF' } },
-      radius: 'round',
-      density: 'compact',
-    },
-    onError: ({ error }) => {
-      console.error('ChatKit error:', error);
-    },
-  });
-
-  // Text highlighting listener
-  useEffect(() => {
-    const handleSelection = () => {
-      const selectedText = window.getSelection()?.toString().trim();
-      if (selectedText && selectedText.length > 3) {
-        setComposerValue(`${selectedText}\n\n`);
-        focusComposer();
-      }
-    };
-
-    document.addEventListener('mouseup', handleSelection);
-    return () => document.removeEventListener('mouseup', handleSelection);
-  }, [setComposerValue, focusComposer]);
-
-  return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-      <ChatKit control={control} className="h-[600px] w-[400px]" />
-    </div>
-  );
-}
-```
-
-### 4. Update Swizzled Layout
-
-Edit `src/theme/Layout/index.js`:
-
-```jsx
-import React from 'react';
-import Layout from '@theme-original/Layout';
-import { ChatKitWidget } from '@site/src/components/ChatKitWidget';
-
-export default function LayoutWrapper(props) {
-  return (
-    <>
-      <Layout {...props} />
-      <ChatKitWidget />
-    </>
-  );
-}
-```
-
-### 5. Setup Backend (OpenAI Agents SDK Integration)
+### 1. Setup Backend (OpenAI Agents SDK Integration)
 
 #### Install Dependencies
 
@@ -306,7 +201,112 @@ async def chat(request: ChatRequest):
     return StreamingResponse(generate(), media_type="text/event-stream")
 ```
 
-### 6. Run Local Development Servers
+### 6. Install Frontend Dependencies
+
+```bash
+# From project root
+npm install
+
+# Install ChatKit React library
+npm install @openai/chatkit-react
+
+# Verify installation
+npm list @openai/chatkit-react
+# Expected: @openai/chatkit-react@<version>
+```
+
+### 7. Swizzle Docusaurus Layout Component
+
+```bash
+# Wrap the Layout component to inject ChatKit
+npm run swizzle @docusaurus/theme-classic Layout -- --wrap
+
+# This creates: src/theme/Layout/index.js
+```
+
+### 8. Create ChatKit Widget Component
+
+Create `src/components/ChatKitWidget.tsx`:
+
+```tsx
+import React, { useEffect } from 'react';
+import { ChatKit, useChatKit } from '@openai/chatkit-react';
+import '@openai/chatkit-react/styles.css';
+
+export function ChatKitWidget() {
+  const { control, setComposerValue, focusComposer } = useChatKit({
+    api: {
+      async getClientSecret(existing) {
+        if (existing) {
+          // Refresh expired token
+          const res = await fetch('http://localhost:8000/api/chatkit/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: existing }),
+          });
+          return (await res.json()).client_secret;
+        }
+
+        // Create new session
+        const res = await fetch('http://localhost:8000/api/chatkit/session', {
+          method: 'POST',
+        });
+        return (await res.json()).client_secret;
+      },
+    },
+    theme: {
+      colorScheme: 'light',
+      color: { accent: { primary: '#2D8CFF' } },
+      radius: 'round',
+      density: 'compact',
+    },
+    onError: ({ error }) => {
+      console.error('ChatKit error:', error);
+    },
+  });
+
+  // Text highlighting listener
+  useEffect(() => {
+    const handleSelection = () => {
+      const selectedText = window.getSelection()?.toString().trim();
+      if (selectedText && selectedText.length > 3) {
+        setComposerValue(`${selectedText}\n\n`);
+        focusComposer();
+      }
+    };
+
+    document.addEventListener('mouseup', handleSelection);
+    return () => document.removeEventListener('mouseup', handleSelection);
+  }, [setComposerValue, focusComposer]);
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+      <ChatKit control={control} className="h-[600px] w-[400px]" />
+    </div>
+  );
+}
+```
+
+### 9. Update Swizzled Layout
+
+Edit `src/theme/Layout/index.js`:
+
+```jsx
+import React from 'react';
+import Layout from '@theme-original/Layout';
+import { ChatKitWidget } from '@site/src/components/ChatKitWidget';
+
+export default function LayoutWrapper(props) {
+  return (
+    <>
+      <Layout {...props} />
+      <ChatKitWidget />
+    </>
+  );
+}
+```
+
+### 10. Run Local Development Servers
 
 #### Terminal 1: Backend
 
@@ -330,17 +330,46 @@ npm run start
 # [SUCCESS] Docusaurus website is running at http://localhost:3000
 ```
 
-### 7. Test Locally
+### 11. Local Agent Validation
 
-1. **Open Browser**: Navigate to `http://localhost:3000/docs/intro`
-2. **Verify Widget**: Chat widget should appear in bottom-right corner
-3. **Test Highlight**:
+1. **Run Reindex Script**: Execute the reindex script to index all documentation
+   ```bash
+   cd backend
+   python scripts/reindex_docs.py
+   # Expected: "Indexed X chunks from Y files"
+   ```
+
+2. **Verify Qdrant Indexing**: Confirm all documentation is indexed in Qdrant
+   - Check Qdrant dashboard for collection: `hackathon-api-cluster`
+   - Verify expected number of chunks are present
+
+### 12. Test Locally
+
+1. **Start Backend**: Ensure backend is running on port 8000
+   ```bash
+   cd backend
+   uv run uvicorn main:app --reload --port 8000
+   ```
+
+2. **Start Frontend**: In a new terminal
+   ```bash
+   cd .. # Back to project root
+   npm run start
+   ```
+
+3. **Open Browser**: Navigate to `http://localhost:3000/docs/intro`
+
+4. **Verify Widget**: Chat widget should appear in bottom-right corner
+
+5. **Test Highlight**:
    - Highlight text: "NVIDIA Isaac Sim 2025"
    - Widget should open with pre-filled text
-4. **Ask Question**: "How does this work with ROS 2?"
-5. **Verify Response**:
+
+6. **Ask Question**: "How does this work with ROS 2?"
+
+7. **Verify Response**:
    - Answer streams token-by-token
-   - Source links appear (once Qdrant is indexed)
+   - Source links appear (from indexed Qdrant content)
 
 ---
 
@@ -609,15 +638,18 @@ In GitHub repository settings → Secrets and variables → Actions:
 
 ## Next Steps
 
-1. ✅ Local development complete
-2. ✅ Backend deployed to Render
-3. ✅ Frontend deployed to GitHub Pages
-4. ✅ Auto-reindex workflow configured
-5. ⏭️ Run `/sp.tasks` to generate implementation tasks
-6. ⏭️ Implement task-by-task following TDD approach
+1. ✅ Phase 1: Backend RAG Agent + Qdrant Indexing complete
+2. ✅ Phase 1.5: Local Agent Validation complete (manual reindex, testing)
+3. ✅ Phase 2: Design complete (`data-model.md`, `contracts/`, `architecture.md`, `quickstart.md`)
+4. ⏭️ Phase 3: Run `/sp.tasks` to generate frontend implementation tasks
+5. ⏭️ Phase 3: Implement frontend tasks following TDD (Red → Green → Refactor)
+6. ⏭️ Phase 4: Auto-reindex GitHub Action implementation
+7. ⏭️ Phase 5: Full end-to-end testing
+8. ⏭️ Phase 6: Deploy to Render + GitHub Pages
+9. ⏭️ Run all testing scenarios (local, deploy, rate-limit)
 
 ---
 
 ## Status
 
-✅ **Quickstart guide complete** - Ready for agent context update (Phase 1 final step)
+✅ **Quickstart guide updated** - Reflects new implementation order: Backend first, then Frontend (Phase 3)

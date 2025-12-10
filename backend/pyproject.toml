@@ -8,9 +8,17 @@ dependencies = [
     "cohere>=5.20.0",
     "fastapi>=0.124.0",
     "openai-agents>=0.6.2",
+    "openai-chatkit>=1.4.0",
     "qdrant-client>=1.16.1",
     "requests>=2.32.5",
     "tenacity>=9.1.2",
     "trafilatura>=2.0.0",
     "uvicorn>=0.38.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "models", "scripts"]
