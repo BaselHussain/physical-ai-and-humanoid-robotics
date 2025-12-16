@@ -13,8 +13,13 @@ from chatkit.types import ThreadMetadata, UserMessageItem, AssistantMessageItem
 from chatkit.agents import stream_agent_response, AgentContext
 from agents import Runner
 
-from .rag_agent import docs_agent
-from . import database, chat_history
+# Conditional imports to support both running from root and from backend directory
+try:
+    from .rag_agent import docs_agent
+    from . import database, chat_history
+except ImportError:
+    from app.rag_agent import docs_agent
+    from app import database, chat_history
 
 logger = logging.getLogger(__name__)
 

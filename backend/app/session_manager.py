@@ -1,7 +1,12 @@
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import uuid
-from ..models.chat import ChatMessage, ChatSession
+
+# Conditional imports to support both running from root and from backend directory
+try:
+    from ..models.chat import ChatMessage, ChatSession
+except ImportError:
+    from models.chat import ChatMessage, ChatSession
 
 # In-memory storage for sessions
 sessions: Dict[str, ChatSession] = {}

@@ -4,22 +4,32 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from agents import Runner
-from .app.rag_agent import docs_agent
-from .app.session_manager import create_session, get_session, add_message
-from .models.chat import ChatRequest, SessionResponse
 import json
 from typing import Any, AsyncIterator
 import re
 import logging
 
-# ChatKit imports
-from .app.chatkit_server import RAGChatKitServer
-from .app.chatkit_store import MemoryStore
-from chatkit.server import StreamingResult
+# Conditional imports to support both running from root and from backend directory
+try:
+    # Try relative imports first (when run as package from root: uvicorn backend.main:app)
+    from .app.rag_agent import docs_agent
+    from .app.session_manager import create_session, get_session, add_message
+    from .models.chat import ChatRequest, SessionResponse
+    from .app.chatkit_server import RAGChatKitServer
+    from .app.chatkit_store import MemoryStore
+    from .app import database
+    from .app import chat_history
+except ImportError:
+    # Fall back to absolute imports (when run from backend directory: uvicorn main:app)
+    from app.rag_agent import docs_agent
+    from app.session_manager import create_session, get_session, add_message
+    from models.chat import ChatRequest, SessionResponse
+    from app.chatkit_server import RAGChatKitServer
+    from app.chatkit_store import MemoryStore
+    from app import database
+    from app import chat_history
 
-# Database imports for Neon Postgres persistence
-from .app import database
-from .app import chat_history
+from chatkit.server import StreamingResult
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
