@@ -13,8 +13,8 @@ from chatkit.types import ThreadMetadata, UserMessageItem, AssistantMessageItem
 from chatkit.agents import stream_agent_response, AgentContext
 from agents import Runner
 
-from app.rag_agent import docs_agent
-from app import database, chat_history
+from .rag_agent import docs_agent
+from . import database, chat_history
 
 logger = logging.getLogger(__name__)
 

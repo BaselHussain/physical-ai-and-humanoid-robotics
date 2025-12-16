@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import uuid
-from models.chat import ChatMessage, ChatSession
+from ..models.chat import ChatMessage, ChatSession
 
 # In-memory storage for sessions
 sessions: Dict[str, ChatSession] = {}
