@@ -15,14 +15,14 @@ Build a production-ready RAG (Retrieval-Augmented Generation) chatbot that enabl
 ## Technical Context
 
 **Language/Version**: Python 3.11+ (backend), TypeScript/JavaScript (frontend)
-**Primary Dependencies**: FastAPI, Chatkit-Python (v1.4.0+), Chatkit-JS (v1.3.0+), Docusaurus v3.x, LiteLLM, Cohere Python SDK, Qdrant Client
-**Storage**: Qdrant Cloud (vector DB), In-memory Dict (session storage)
+**Primary Dependencies**: FastAPI, Chatkit-Python (v1.4.0+), Chatkit-JS (v1.3.0+), Docusaurus v3.x, LiteLLM, Cohere Python SDK, Qdrant Client, psycopg2/asyncpg (Neon Postgres)
+**Storage**: Qdrant Cloud (vector DB), Neon Postgres (chat history persistence)
 **Testing**: pytest (backend), Jest (frontend), manual integration tests
 **Target Platform**: Render free tier (backend), GitHub Pages (frontend)
 **Project Type**: Web (frontend + backend)
 **Performance Goals**: 2-second first token latency (95th percentile), 5-minute reindex for 200 files, 50 concurrent sessions
-**Constraints**: 512 MB RAM (Render), 384-token chunks, no OpenAI API, no persistent session storage
-**Scale/Scope**: ~10,000 documentation chunks, 1000 queries/day, 10-50 concurrent sessions
+**Constraints**: 512 MB RAM (Render), 384-token chunks, no OpenAI API
+**Scale/Scope**: ~10,000 documentation chunks, 1000 queries/day, 10-50 concurrent sessions, <10,000 messages/month
 
 ---
 
@@ -100,24 +100,28 @@ specs/rag-chatbot/
 ```text
 physical-ai-and-humanoid-robotics/
 ├── backend/                        # FastAPI backend (existing)
-│   ├── main.py                     # [MODIFY] Add chat endpoints + session mgmt
-│   ├── app/                          # [NEW] RAG agent and session management
+│   ├── main.py                     # [MODIFY] Add chat endpoints + Neon DB connection
+│   ├── app/                          # [NEW] RAG agent and chat history management
 │   │   ├── rag_agent.py            # RAG agent config (Gemini + Qdrant)
-│   │   └── session_manager.py      # In-memory session storage
+│   │   ├── database.py             # [NEW] Neon Postgres connection pool
+│   │   └── chat_history.py         # [NEW] Chat history CRUD operations
 │   ├── scripts/                    # [NEW] Reindexing scripts
 │   │   └── reindex_docs.py         # GitHub Actions reindex script
 │   ├── models/                     # [NEW] Pydantic models
 │   │   ├── chat.py                 # ChatRequest, ChatMessage, ChatSession
 │   │   └── indexing.py             # IndexingJob, DocumentChunk
-│   ├── requirements.txt            # [MODIFY] Add agents SDK, litellm, tenacity
-│   └── .env                        # [EXISTING] GEMINI_API_KEY already present
+│   ├── migrations/                 # [NEW] Database migration scripts
+│   │   └── 001_create_chat_tables.sql  # Chat sessions and messages tables
+│   ├── requirements.txt            # [MODIFY] Add agents SDK, litellm, tenacity, asyncpg
+│   └── .env                        # [MODIFY] Add NEON_DATABASE_URL
 │
 ├── src/                            # Docusaurus theme overrides
 │   ├── theme/                      # [NEW] Swizzled components
 │   │   └── Layout/
 │   │       └── index.js            # Wrapped layout with CustomChatWidget
 │   └── components/                 # [NEW] Custom components
-│       └── CustomChatWidgetWidget.tsx       # CustomChatWidget React component with highlight listener
+│       ├── CustomChatWidgetWidget.tsx       # CustomChatWidget React component with context menu
+│       └── TextSelectionMenu.tsx   # [NEW] Context menu for text selection
 │
 ├── docs/                           # [EXISTING] Documentation
 │   ├── 001-physical-ai-intro/
@@ -221,22 +225,56 @@ physical-ai-and-humanoid-robotics/
 - ✅ `quickstart.md`: Step-by-step guide for local dev setup, testing, production deployment, auto-reindex configuration
 
 **Key Design Decisions**:
-- **In-Memory Sessions**: No database persistence (FR-018), sessions expire after 30 min
+- **Persistent Chat History**: Neon Postgres database for storing chat sessions and messages (FR-018), enabling history restoration across browser sessions
+- **Context Menu for Text Selection**: Browser-native context menu with "Ask from AI" option when text is highlighted (FR-002)
+- **Collapsible Chat Widget**: Chat window initially closed, opens/collapses on icon click (FR-001a)
 - **Streaming SSE**: Server-Sent Events for token-by-token response (FR-004)
 - **384-Token Chunks**: Medium granularity for Cohere embeddings (Clarification Q2)
 - **Exponential Backoff**: Retry with 2s → 4s → 8s delays for Gemini rate limits (FR-015a)
 
 ---
 
-### Phase 3: Frontend ChatKit Widget Integration ⏳ PENDING
+### Phase 2.5: Neon Database Setup & Chat History Persistence ⏳ PENDING
 
-**Objective**: Integrate ChatKit widget into Docusaurus documentation site with text highlighting.
+**Objective**: Set up Neon Postgres database and implement persistent chat history storage.
 
-**Scope**: This phase is **NEXT** after backend validation. Includes:
-- Frontend tasks (swizzle Layout, create CustomChatWidgetWidget, text highlighting)
+**Scope**: This phase adds database persistence to store chat history. Includes:
+- Create Neon Postgres serverless database instance
+- Design and create database schema (chat_sessions, chat_messages tables)
+- Implement database connection pooling with asyncpg
+- Build CRUD operations for chat history
+- Update backend to save/retrieve messages from Neon
+- Implement session restoration on user return
+
+**Key Implementation Tasks**:
+- Create SQL migration scripts for chat tables
+- Implement `app/database.py` with connection pool
+- Implement `app/chat_history.py` with CRUD operations
+- Update `main.py` to persist messages to Neon
+- Add session restoration logic on chat widget load
+- Set environment variable `NEON_DATABASE_URL` in `.env`
+
+**Expected Output**: Working database integration with chat history persistence and restoration.
+
+---
+
+### Phase 3: Frontend ChatKit Widget Integration + Context Menu ⏳ PENDING
+
+**Objective**: Integrate ChatKit widget into Docusaurus documentation site with text selection context menu.
+
+**Scope**: This phase is **AFTER** database setup. Includes:
+- Frontend tasks (swizzle Layout, create CustomChatWidgetWidget)
+- Text selection context menu with "Ask from AI" option
+- Chat widget initially closed, opens on icon click
 - Docusaurus integration with ChatKit-JS widget
-- Text highlighting and pre-fill functionality
 - Theme customization and styling
+
+**Key Implementation Tasks**:
+- Create `TextSelectionMenu.tsx` component for context menu
+- Add text selection event listeners
+- Implement chat widget open/close functionality
+- Update CustomChatWidget to handle pre-populated text from context menu
+- Style context menu to match documentation theme
 
 **Expected Output**: `specs/rag-chatbot/tasks.md` with frontend integration tasks, each with acceptance criteria and test commands.
 
@@ -443,7 +481,107 @@ print('Response:', result.final_output)
 
 ---
 
-### 4. Frontend: Custom React UI component Widget Integration (Phase 3)
+### 3.5. Neon Database Setup & Chat History Persistence (Phase 2.5)
+
+#### 3.5.1. Create Neon Postgres Database
+- Navigate to [Neon Console](https://console.neon.tech/) and create a new serverless project
+- Copy the connection string (DATABASE_URL)
+
+**Acceptance Criteria**:
+- Neon project created successfully
+- Connection string obtained
+- Database accessible via psql or pgAdmin
+
+#### 3.5.2. Create Database Schema
+- **File**: `backend/migrations/001_create_chat_tables.sql`
+- **Tables**:
+  - `chat_sessions`: session_id (UUID PK), user_identifier (TEXT), created_at (TIMESTAMPTZ), last_active_at (TIMESTAMPTZ)
+  - `chat_messages`: message_id (UUID PK), session_id (UUID FK), message_text (TEXT), role (TEXT), timestamp (TIMESTAMPTZ), source_references (JSONB)
+
+**Acceptance Criteria**:
+- SQL migration script creates both tables successfully
+- Foreign key constraint on `chat_messages.session_id` references `chat_sessions.session_id`
+- Indexes created on frequently queried fields (session_id, timestamp)
+
+**Test Command**:
+```bash
+psql "YOUR_NEON_DATABASE_URL" -f backend/migrations/001_create_chat_tables.sql
+# Verify tables created:
+psql "YOUR_NEON_DATABASE_URL" -c "\dt"
+```
+
+#### 3.5.3. Implement Database Connection Pool
+- **File**: `backend/app/database.py`
+- **Features**:
+  - asyncpg connection pool initialization
+  - Environment variable `NEON_DATABASE_URL` loading
+  - Startup/shutdown pool lifecycle management
+  - Connection health checks
+
+**Acceptance Criteria**:
+- Connection pool initializes without errors
+- Pool size configurable (default: min=2, max=10)
+- Graceful pool shutdown on application exit
+
+#### 3.5.4. Implement Chat History CRUD Operations
+- **File**: `backend/app/chat_history.py`
+- **Functions**:
+  - `create_session(user_identifier: str) -> str`: Create new session, return session_id
+  - `get_session(session_id: str) -> ChatSession`: Retrieve session details
+  - `save_message(session_id: str, message: ChatMessage) -> None`: Save message to database
+  - `get_session_history(session_id: str) -> List[ChatMessage]`: Retrieve all messages for session
+  - `update_last_active(session_id: str) -> None`: Update session's last_active_at timestamp
+
+**Acceptance Criteria**:
+- All functions execute without errors
+- Database queries are parameterized (SQL injection protection)
+- Error handling for database connection failures
+- Type hints for all function parameters and return values
+
+#### 3.5.5. Update Backend to Persist Messages
+- **File**: `backend/main.py`
+- **Changes**:
+  - Initialize database pool on startup
+  - On `/api/chat` endpoint: save each user message and assistant response to Neon
+  - On `/api/chatkit/session` endpoint: create new session in database, return session_id
+  - Add `/api/sessions/{session_id}/restore` endpoint to retrieve full chat history
+
+**Acceptance Criteria**:
+- All incoming user messages are saved to `chat_messages` table
+- All assistant responses are saved with source_references in JSONB format
+- Session restoration returns messages in chronological order
+- No impact on existing chat functionality (backward compatible)
+
+**Test Command**:
+```bash
+cd backend
+uv run uvicorn main:app --reload --port 8000
+
+# Test session creation:
+curl -X POST http://localhost:8000/api/chatkit/session
+# Expected: {"client_secret": "...", "session_id": "..."}
+
+# Test chat message persistence:
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Test message", "session_id": "SESSION_ID_FROM_ABOVE"}'
+
+# Verify in database:
+psql "YOUR_NEON_DATABASE_URL" -c "SELECT * FROM chat_messages;"
+```
+
+#### 3.5.6. Add Environment Variable
+- **File**: `backend/.env`
+- **Variable**: `NEON_DATABASE_URL=postgresql://user:password@host/database?sslmode=require`
+
+**Acceptance Criteria**:
+- Environment variable loaded successfully at startup
+- Connection string format validated (postgresql://...)
+- SSL mode enabled for secure connections
+
+---
+
+### 4. Frontend: Custom React UI component Widget Integration + Context Menu (Phase 3)
 
 #### 4.1. Install Dependencies
 ```bash
@@ -463,47 +601,82 @@ npm run swizzle @docusaurus/theme-classic Layout -- --wrap
 - File created: `src/theme/Layout/index.js`
 - Imports `@theme-original/Layout` successfully
 
-#### 4.3. Create CustomChatWidgetWidget Component
+#### 4.3. Create Text Selection Context Menu Component
+- **File**: `src/components/TextSelectionMenu.tsx`
+- **Features**:
+  - Detect text selection on `mouseup` event
+  - Show context menu with options: "Ask from AI", "Copy", standard browser operations
+  - Position menu near selected text
+  - Handle "Ask from AI" click: open chat widget + pre-fill text
+  - Hide menu on deselect or click outside
+
+**Acceptance Criteria**:
+- Context menu appears when text (>3 chars) is selected
+- Menu positioned correctly near selection
+- "Ask from AI" option triggers chat widget open with pre-filled text
+- "Copy" option copies text to clipboard
+- Menu disappears on text deselection
+
+#### 4.4. Create CustomChatWidget Component
 - **File**: `src/components/CustomChatWidgetWidget.tsx`
 - **Features**:
   - `useCustomChatWidget` hook with `getClientSecret` callback
-  - Text highlighting listener (`mouseup` event)
+  - Initially closed state (only icon visible)
+  - Open/close toggle on icon click
+  - Accept pre-populated text from TextSelectionMenu
   - Theme configuration (color, radius, density)
   - Error handling (`onError` callback)
+  - Session restoration on component mount
 
 **Acceptance Criteria**:
 - Component compiles without TypeScript errors
+- Chat widget initially shows only icon in bottom-right corner
+- Clicking icon toggles chat window open/closed
 - `getClientSecret` fetches from `/api/chatkit/session`
-- Highlighted text (>3 chars) pre-fills composer
+- Pre-populated text from context menu appears in input field
+- On mount, restores chat history from `/api/sessions/{session_id}/restore`
 
-#### 4.4. Wrap Layout with CustomChatWidgetWidget
+#### 4.5. Wrap Layout with CustomChatWidget and TextSelectionMenu
 - **File**: `src/theme/Layout/index.js`
-- **Change**: Add `<CustomChatWidgetWidget />` after `<Layout {...props} />`
+- **Changes**:
+  - Add `<TextSelectionMenu />` component to handle text selection
+  - Add `<CustomChatWidgetWidget />` after `<Layout {...props} />`
+  - Pass state handler between TextSelectionMenu and CustomChatWidget for text pre-filling
 
 **Acceptance Criteria**:
-- Widget renders on all documentation pages
-- Widget position: fixed, bottom-right corner
+- Both components render on all documentation pages
+- Chat widget position: fixed, bottom-right corner, initially closed (icon only)
+- Context menu appears on text selection
 - Widget z-index: 1000 (above all other elements)
+- Communication between components working (text pre-fill)
 
 **Test Command**:
 ```bash
 npm run start
 # Open http://localhost:3000/docs/intro
-# Verify widget appears in bottom-right
+# Verify chat icon appears in bottom-right (window closed)
+# Click icon → chat window opens
+# Select text → context menu appears
+# Click "Ask from AI" → chat window opens with text pre-filled
 ```
 
 ---
 
-### 5. Session Handling + Streaming + Source Citations (Phase 3)
+### 5. Session Handling + Streaming + Source Citations + History Restoration (Phase 3)
 
-#### 5.1. Implement Session Persistence Across Page Navigation
+#### 5.1. Implement Session Persistence Across Page Navigation and Browser Sessions
 - **Frontend**: Store `session_id` in `localStorage`
-- **Backend**: Validate `session_id` exists before processing messages
+- **Backend**: Validate `session_id` exists in Neon database before processing messages
+- **Frontend**: On component mount, check `localStorage` for existing `session_id`
+- **Frontend**: If `session_id` exists, call `/api/sessions/{session_id}/restore` to load chat history
+- **Frontend**: If `session_id` doesn't exist or is invalid, create new session
 
 **Acceptance Criteria**:
 - User navigates from page A to page B
 - Chat widget maintains `session_id` (no new session created)
 - Conversation history persists across navigation
+- User closes browser and reopens → chat history restored from Neon database
+- Invalid/expired session IDs trigger creation of new session
 
 #### 5.2. Implement Token-by-Token Streaming
 - **Backend**: Use `Runner.run_streamed()` with `async for event in result.stream_events()`
@@ -731,12 +904,14 @@ jobs:
 2. ✅ Phase 1: Backend RAG Agent + Qdrant Indexing complete (`rag_agent.py`, `reindex_docs.py`, Qdrant integration)
 3. ✅ Phase 1.5: Local Agent Validation complete (manual reindex, testing script, hallucination detection)
 4. ✅ Phase 2: Design complete (`data-model.md`, `contracts/`, `architecture.md`, `quickstart.md`)
-5. ⏭️ **Phase 3: Run `/sp.tasks`** to generate frontend implementation tasks
-6. ⏭️ Implement frontend tasks following TDD (Red → Green → Refactor)
-7. ⏭️ Phase 4: Auto-reindex GitHub Action implementation
-8. ⏭️ Phase 5: Full end-to-end testing
-9. ⏭️ Phase 6: Deploy to Render + GitHub Pages
-10. ⏭️ Run all testing scenarios (local, deploy, rate-limit)
+5. ⏭️ **Phase 2.5: Run `/sp.tasks`** to generate Neon database setup and chat history persistence tasks
+6. ⏭️ Implement Phase 2.5 tasks (database schema, CRUD operations, backend integration)
+7. ⏭️ **Phase 3: Run `/sp.tasks`** to generate frontend implementation tasks (context menu + collapsible widget)
+8. ⏭️ Implement frontend tasks following TDD (Red → Green → Refactor)
+9. ⏭️ Phase 4: Auto-reindex GitHub Action implementation
+10. ⏭️ Phase 5: Full end-to-end testing
+11. ⏭️ Phase 6: Deploy to Render + GitHub Pages
+12. ⏭️ Run all testing scenarios (local, deploy, rate-limit, history restoration)
 
 ---
 
