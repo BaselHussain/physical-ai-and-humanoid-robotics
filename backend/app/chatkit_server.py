@@ -14,10 +14,16 @@ from chatkit.agents import stream_agent_response, AgentContext
 from agents import Runner
 
 # Conditional imports to support both running from root and from backend directory
-try:
+# Check parent module's __package__ to determine import style
+import sys
+_parent_package = sys.modules['__main__'].__package__ if '__main__' in sys.modules else None
+
+if _parent_package:
+    # Running as package from root: uvicorn backend.main:app
     from .rag_agent import docs_agent
     from . import database, chat_history
-except ImportError:
+else:
+    # Running from backend directory: uvicorn main:app
     from app.rag_agent import docs_agent
     from app import database, chat_history
 

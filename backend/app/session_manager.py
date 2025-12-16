@@ -1,11 +1,17 @@
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import uuid
+import sys
 
 # Conditional imports to support both running from root and from backend directory
-try:
+# Check parent module's __package__ to determine import style
+_parent_package = sys.modules['__main__'].__package__ if '__main__' in sys.modules else None
+
+if _parent_package:
+    # Running as package from root: uvicorn backend.main:app
     from ..models.chat import ChatMessage, ChatSession
-except ImportError:
+else:
+    # Running from backend directory: uvicorn main:app
     from models.chat import ChatMessage, ChatSession
 
 # In-memory storage for sessions
