@@ -21,72 +21,102 @@
 
 ---
 
-## Phase 3: Pure FastAPI Routes (5 tasks)
+## Phase 3: Verify Existing Chat API (OPTIONAL - SKIP IF WORKING) (1 task)
 
-**Goal**: Create clean FastAPI routes with our working OpenAI Agents SDK RAG agent (User Story 1)
+**Goal**: Verify existing chat API in backend/main.py works, skip if already confirmed working
 
-**Duration**: 75 minutes total (15 min per task)
+**Duration**: 15 minutes (SKIP if chatbot already working)
 
-- [ ] T100 [P] [US1] Use Context7 MCP server to research latest FastAPI documentation for streaming responses
-  - **Action**: Query Context7 MCP for FastAPI SSE streaming best practices
-  - **Output**: Extract correct StreamingResponse patterns and event streaming examples
-  - **Acceptance**: Document proper FastAPI streaming implementation patterns for token-by-token responses
-  - **Duration**: 15 minutes
-
-- [ ] T101 [US1] Create clean FastAPI routes in backend/main.py: POST /api/session → returns session_id, POST /api/chat → accepts {session_id, message} → calls our working docs_agent → streams response with source links
-  - **File**: backend/main.py (modify existing)
-  - **Acceptance**: POST /api/session creates new session and returns session_id, POST /api/chat accepts {session_id, message} and uses our working docs_agent to return streaming response with source citations, CORS configured for book domain (https://baselhussain.github.io), no ChatKit-Python dependencies
-  - **Duration**: 15 minutes
-
-- [ ] T102 [US1] Test new routes locally with curl: curl POST /api/session → get session_id → curl POST /api/chat with {session_id, message}
+- [ ] T100 [US1] Verify existing chat API endpoints work correctly
   - **Command**: `cd backend && uv run uvicorn main:app --reload --port 8000`
-  - **Test**: Terminal 2: `curl -X POST http://localhost:8000/api/session` then `curl -X POST http://localhost:8000/api/chat -d '{"session_id":"...", "message":"What is ROS 2?"}' -H "Content-Type: application/json"`
-  - **Acceptance**: Session creation returns valid session_id, chat endpoint streams response with sources, no errors in console, streaming works perfectly with source citations
+  - **Test**: Test existing chat endpoint with a question
+  - **Acceptance**: Existing chat endpoint streams response with sources, no errors
   - **Duration**: 15 minutes
+  - **NOTE**: ⚠️ SKIP THIS ENTIRE PHASE if chatbot is already working - go directly to Phase 3.5
 
-- [ ] T103 [P] [US1] Update Pydantic models in backend/models/chat.py to support new API structure
-  - **File**: backend/models/chat.py
-  - **Acceptance**: Create SessionResponse (session_id), Update ChatRequest to accept {session_id, message}, ensure compatibility with streaming responses
-  - **Duration**: 15 minutes
-
-- [ ] T104 [US1] Add proper CORS configuration for book domain in backend/main.py
-  - **File**: backend/main.py (modify existing)
-  - **Acceptance**: CORS middleware allows https://baselhussain.github.io for production use, maintains local development access
-  - **Duration**: 15 minutes
-
-**Checkpoint**: New API routes working perfectly - POST /api/session and POST /api/chat with streaming responses and source citations
+**Checkpoint**: Existing chat API confirmed working - ready to ADD database persistence (not rebuild routes)
 
 ---
 
-## Phase 4: Frontend - ChatKit-JS Widget (4 tasks)
+## Phase 3.5: Neon Database Setup & Chat History Persistence (6 tasks)
 
-**Goal**: Implement interactive chat widget using ChatKit-JS that connects to new API routes (User Story 1 + 3)
+**Goal**: Set up Neon Postgres database and implement persistent chat history storage (FR-018)
 
-**Duration**: 60 minutes total (15 min per task)
+**Duration**: 90 minutes total (15 min per task)
 
-- [ ] T001 [P] [US3] Install ChatKit-JS dependency and verify installation in package.json
+- [X] T105 [P] [US1] Create Neon Postgres serverless database and obtain connection string
+  - **Action**: Create account at console.neon.tech, create new project, copy DATABASE_URL
+  - **Acceptance**: Neon project created, connection string obtained, database accessible
+  - **Duration**: 15 minutes
+
+- [X] T106 [P] [US1] Create database migration script for chat tables in backend/migrations/001_create_chat_tables.sql
+  - **File**: backend/migrations/001_create_chat_tables.sql (new)
+  - **Acceptance**: SQL script creates chat_sessions table (session_id UUID PK, user_identifier TEXT, created_at TIMESTAMPTZ, last_active_at TIMESTAMPTZ) and chat_messages table (message_id UUID PK, session_id UUID FK, message_text TEXT, role TEXT, timestamp TIMESTAMPTZ, source_references JSONB), foreign key constraint created, indexes on session_id and timestamp
+  - **Duration**: 15 minutes
+
+- [X] T107 [US1] Run migration script to create database schema
+  - **Command**: `psql "YOUR_NEON_DATABASE_URL" -f backend/migrations/001_create_chat_tables.sql`
+  - **Acceptance**: Tables created successfully, verify with `psql "YOUR_NEON_DATABASE_URL" -c "\dt"`, both tables exist
+  - **Duration**: 15 minutes
+
+- [X] T108 [P] [US1] Implement database connection pool in backend/app/database.py
+  - **File**: backend/app/database.py (new)
+  - **Acceptance**: asyncpg connection pool initialization, NEON_DATABASE_URL environment variable loading, startup/shutdown lifecycle management, connection health checks, configurable pool size (min=2, max=10)
+  - **Duration**: 15 minutes
+
+- [X] T109 [P] [US1] Implement chat history CRUD operations in backend/app/chat_history.py
+  - **File**: backend/app/chat_history.py (new)
+  - **Acceptance**: create_session(user_identifier) returns session_id, get_session(session_id) retrieves session, save_message(session_id, message) saves to DB, get_session_history(session_id) retrieves all messages, update_last_active(session_id) updates timestamp, all queries parameterized (SQL injection protection), error handling for DB failures
+  - **Duration**: 15 minutes
+
+- [X] T110 [US1] ADD database persistence to existing chat routes in backend/main.py
+  - **File**: backend/main.py (modify existing routes, don't rebuild them)
+  - **Acceptance**: Initialize database pool on startup, MODIFY existing chat endpoint to ALSO save messages to Neon (keep all current functionality), ADD new GET /api/sessions/{session_id}/restore endpoint for history, add NEON_DATABASE_URL to backend/.env (user provides value), ⚠️ CRITICAL: existing chatbot functionality remains unchanged, only adds database saving
+  - **Duration**: 15 minutes
+
+**Checkpoint**: Chat history persists in Neon database, session restoration working, GET /api/sessions/{id}/restore returns messages
+
+---
+
+## Phase 4: Frontend - ChatKit-JS Widget + Context Menu + Collapsible UI (6 tasks)
+
+**Goal**: Implement interactive chat widget with text selection context menu and collapsible UI (User Story 1 + 3, FR-001a, FR-002, FR-002a)
+
+**Duration**: 90 minutes total (15 min per task)
+
+- [X] T001 [P] [US3] Install ChatKit-JS dependency and verify installation in package.json
   - **Command**: `npm install @openai/chatkit-client`
   - **Output**: package.json modified, node_modules/@openai/chatkit-client exists
   - **Acceptance**: `npm list @openai/chatkit-client` shows version number, no dependency conflicts, no ChatKit-Python in dependencies
   - **Duration**: 15 minutes
 
-- [ ] T002 [US3] Swizzle Docusaurus Layout component to inject custom chat widget
+- [X] T002 [US3] Swizzle Docusaurus Layout component to inject custom chat widget
   - **Command**: `npm run swizzle @docusaurus/theme-classic Layout -- --wrap`
   - **Output**: src/theme/Layout/index.js created
   - **Acceptance**: File exists and contains wrapped Layout export, imports original Layout successfully
   - **Duration**: 15 minutes
 
-- [ ] T003 [P] [US1] Create CustomChatWidgetWidget component that connects to new /api/chat in src/components/CustomChatWidgetWidget.tsx
+- [X] T003 [P] [US1] Create TextSelectionMenu component for context menu in src/components/TextSelectionMenu.tsx
+  - **File**: src/components/TextSelectionMenu.tsx (new)
+  - **Acceptance**: Detects text selection on mouseup event (>3 chars), shows context menu with options "Ask from AI" and "Copy", positions menu near selected text, handles "Ask from AI" click to trigger chat widget open with pre-filled text, handles "Copy" click to copy to clipboard, hides menu on deselect or click outside
+  - **Duration**: 15 minutes
+
+- [X] T004 [P] [US1] Create CustomChatWidget component with collapsible UI in src/components/CustomChatWidgetWidget.tsx
   - **File**: src/components/CustomChatWidgetWidget.tsx
-  - **Acceptance**: Component makes API calls to new endpoints (POST /api/session, POST /api/chat), implements text highlighting listener (mouseup event), widget styled with position fixed/bottom-right/z-index 1000, handles streaming responses from new API
+  - **Acceptance**: Initially closed (only icon visible), opens/collapses on icon click (FR-001a), makes API calls to POST /api/session and POST /api/chat, accepts pre-populated text from TextSelectionMenu (FR-002a), widget styled position fixed/bottom-right/z-index 1000, handles streaming responses, on component mount checks localStorage for session_id and calls GET /api/sessions/{session_id}/restore if exists (FR-018c)
   - **Duration**: 15 minutes
 
-- [ ] T004 [US3] Update swizzled Layout to render CustomChatWidgetWidget on all pages in src/theme/Layout/index.js
+- [ ] T005 [US3] Update swizzled Layout to render both TextSelectionMenu and CustomChatWidget in src/theme/Layout/index.js
   - **File**: src/theme/Layout/index.js
-  - **Acceptance**: Layout wraps original with CustomChatWidgetWidget, widget appears on localhost:3000/docs/intro after `npm run start`, connects to new API routes (not ChatKit-Python)
+  - **Acceptance**: Layout includes TextSelectionMenu and CustomChatWidget components, state handler passes selected text from TextSelectionMenu to CustomChatWidget, both components appear on localhost:3000/docs/intro after `npm run start`
   - **Duration**: 15 minutes
 
-**Checkpoint**: Widget visible on all pages, connects to new API, highlights text and streams responses
+- [ ] T006 [US1] Test complete frontend flow: text selection → context menu → chat widget open → history restoration
+  - **Command**: `npm run start`, open http://localhost:3000/docs/intro
+  - **Acceptance**: Chat icon appears (window closed), click icon → window opens, select text → context menu appears, click "Ask from AI" → chat opens with text pre-filled, close browser → reopen → chat history restored from Neon DB
+  - **Duration**: 15 minutes
+
+**Checkpoint**: Widget with collapsible UI working, context menu functional, text pre-fill working, history restoration from Neon DB successful
 
 ---
 
@@ -137,25 +167,30 @@
 - **Phase 1 (Backend - Completed)**: OpenAI Agents SDK RAG agent working perfectly with Qdrant indexing (tasks T005-T009, T005.5 completed)
 - **Phase 2 (Local Validation - Completed)**: Agent validation passed with no hallucination (task T005.5 completed)
 - **Phase 3 (Pure FastAPI Routes)**: Depends on completed backend RAG functionality
-- **Phase 4 (Frontend)**: Depends on Phase 3 (new API routes working)
+- **Phase 3.5 (Neon Database)**: Depends on Phase 3 (new API routes) to integrate with
+- **Phase 4 (Frontend)**: Depends on Phase 3.5 (database persistence for history restoration)
 - **Phase 5 (Auto-Reindex + Deploy)**: Depends on all previous phases passing
 
 ### User Story Dependencies
 
-- **User Story 1 (P1) - Interactive Reading**: Tasks T100, T101, T102, T103, T104, T003, T004, T013, T014
-  - Can start after Phase 3 (new backend routes)
+- **User Story 1 (P1) - Interactive Reading**: Tasks T100, T101, T102, T103, T104, T105-T110 (database), T003, T004, T005, T006, T013, T014
+  - Requires Phase 3 (API routes) + Phase 3.5 (database persistence) + Phase 4 (frontend with context menu)
 - **User Story 2 (P2) - Fresh Content Sync**: Tasks T010, T011, T012
   - Can start after Phase 3 (new backend routes working)
-- **User Story 3 (P3) - Zero-Config Widget**: Tasks T001, T002, T004
-  - Can start immediately but requires Phase 3 backend routes to function
+- **User Story 3 (P3) - Zero-Config Widget**: Tasks T001, T002, T005
+  - Requires Phase 3 backend routes and Phase 3.5 database to function
 
 ### Within Each Phase
 
 - **Phase 3**: T100 → T103 → T101 → T104 → T102 (T102 sequential after T101)
-- **Phase 4**: T001 → T002 → T003 and T004 in parallel
+- **Phase 3.5**: T105, T106, T108, T109 in parallel → T107 → T110
+- **Phase 4**: T001 → T002 → T003, T004 in parallel → T005 → T006
 - **Phase 5**: T010, T011 in parallel → T012 → T013 → T014 → T015
 
 ### Parallel Opportunities
+
+**Within Phase 3.5**:
+- T105, T106, T108, T109 can run in parallel (different components, no dependencies)
 
 **Within Phase 4**:
 - T003 and T004 can run in parallel after T001, T002 completed
@@ -166,21 +201,29 @@
 
 ### MVP First (User Story 1 - Single Sprint)
 
-Given the tight scope (15 tasks, 15 min each = ~3.75 hours total):
+Given the scope (19 tasks, 15 min each = ~4.75 hours total):
 
-1. **Phase 3**: New API routes (5 tasks) - 75 minutes
-2. **Phase 4**: Frontend widget (4 tasks) - 60 minutes
-3. **Phase 5**: Testing and deployment (6 tasks) - 90 minutes
+1. **Phase 3**: SKIP (chatbot already working) - 0 minutes
+2. **Phase 3.5**: ADD Neon database to existing routes (6 tasks) - 90 minutes
+3. **Phase 4**: ADD context menu + collapsible UI to frontend (6 tasks) - 90 minutes
+4. **Phase 5**: Testing and deployment (6 tasks) - 90 minutes
 
-**Total Duration**: 3.75 hours (225 minutes) for 15 tasks
+**Total Duration**: 4.75 hours (285 minutes) for 18 tasks (assumes Phase 3 skipped)
 
 ### Parallel Team Strategy
 
-With 2 developers:
+With 2 developers (or solo developer approach):
 
-1. **Developer A**: Phase 3 (backend routes) - 75 minutes
-2. **Developer B**: Phase 4 (frontend) - starts after Phase 3 complete - 60 minutes
-3. **Both**: Phase 5 (testing/deploy) - 90 minutes
+1. **Developer A**: Phase 3.5 backend (T105, T108, T109) - 45 minutes in parallel
+2. **Developer B**: Phase 3.5 database (T106, T107) - 30 minutes
+3. **Both collaborate**: T110 (ADD database to existing routes) - 15 minutes
+4. **Developer A**: Phase 4 backend support - minimal
+5. **Developer B**: Phase 4 frontend (T001-T006) - 90 minutes
+6. **Both**: Phase 5 (testing/deploy) - 90 minutes
+
+**Optimized Duration with Parallelization**: ~3.5-4 hours
+
+**Solo Developer**: Work sequentially through phases, ~4.75 hours total
 
 ---
 
@@ -188,25 +231,36 @@ With 2 developers:
 
 - **[P] tasks** = different files, no dependencies, can run in parallel
 - **[Story] labels**: US1 (Interactive Reading), US2 (Fresh Content Sync), US3 (Zero-Config Widget)
-- **NO ChatKit-Python**: Pure FastAPI + OpenAI Agents SDK stack only (the winning stack)
-- **Existing backend**: Use existing OpenAI Agents SDK implementation, just add new routes
-- **Context7 MCP**: Use for FastAPI, OpenAI Agents SDK, Qdrant, ChatKit-JS, Docusaurus documentation lookup
+- **NO new routes needed**: Existing chat API in main.py already works, we're only ADDING 3 features
+- **New Features Added** (ADDITIONS only, no rebuilding):
+  - **Neon Postgres**: ADD database saving to existing chat routes (FR-018) - survives browser restarts
+  - **Context Menu**: NEW component for text selection with "Ask from AI" option (FR-002, FR-002a)
+  - **Collapsible Widget**: UPDATE frontend to show icon initially, open on click (FR-001a)
+- **Existing backend**: Keep ALL current functionality, only ADD database.save_message() calls to existing routes
+- **Context7 MCP**: Use for FastAPI, OpenAI Agents SDK, Qdrant, ChatKit-JS, Docusaurus, asyncpg documentation lookup
 - **Commit strategy**: Commit after each phase completion
 - **Checkpoints**: Each phase ends with a working, testable increment
 - **Avoid**: ChatKit-Python dependencies, only use pure FastAPI + OpenAI Agents SDK
+- **IMPORTANT**: Do NOT modify existing working chatbot functionality, only ADD new features on top
 
 ---
 
 ## Final Acceptance Criteria
 
-✅ **Pure FastAPI API routes working**: POST /api/session and POST /api/chat with streaming responses (T101, T102)
-✅ **Frontend connects to new endpoints**: No ChatKit-Python dependency (T003, T004)
-✅ **Highlight text → ask → streamed answer with source link via pure FastAPI in <3 sec** (T013)
+✅ **Existing chat API verified working**: Current chatbot functionality unchanged (Phase 3 skipped if already working)
+✅ **Neon database integration**: Database persistence ADDED to existing chat routes (T105-T110)
+✅ **Session restoration**: GET /api/sessions/{id}/restore returns full chat history (T110)
+✅ **Context menu for text selection**: Appears when text selected, "Ask from AI" option pre-fills chat (T003, FR-002, FR-002a)
+✅ **Collapsible chat widget**: Initially closed (icon only), opens on click (T004, FR-001a)
+✅ **Chat history restoration**: Close browser → reopen → history loaded from Neon (T006, FR-018c)
+✅ **Frontend connects to new endpoints**: No ChatKit-Python dependency (T004, T005)
+✅ **Highlight text → context menu → ask → streamed answer with source link via pure FastAPI in <3 sec** (T013)
 ✅ **Push new Markdown → wait <5 min → ask about new content → correct answer via pure FastAPI** (T012)
 ✅ **Rate limit → shows "Processing…" via pure FastAPI + retries successfully** (T014)
-✅ **Deployed live on Render with pure FastAPI backend** (T015)
+✅ **Deployed live on Render with pure FastAPI backend + Neon database** (T015)
 ✅ **NO ChatKit-Python dependencies anywhere in the stack** (verified throughout)
+✅ **Existing chatbot functionality UNCHANGED** (only new features added on top)
 
-**Total Tasks**: 15 (within 15-18 target)
-**Total Duration**: ~225 minutes (3.75 hours)
-**Parallel Opportunities**: Within Phase 4 (T003, T004)
+**Total Tasks**: 19 actual tasks (Phase 3 is optional/skippable, Phases 3.5, 4, 5 are required)
+**Total Duration**: ~315 minutes (5.25 hours) if Phase 3 skipped, ~330 min if Phase 3 run
+**Parallel Opportunities**: Within Phase 3.5 (T105, T106, T108, T109) and Phase 4 (T003, T004)

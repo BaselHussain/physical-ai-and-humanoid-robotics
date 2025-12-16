@@ -26,10 +26,12 @@ Readers browsing the Physical AI & Humanoid Robotics documentation need instant 
 
 **Acceptance Scenarios**:
 
-1. **Given** a user is reading the "Isaac Platform Overview" page, **When** they highlight "NVIDIA Isaac Sim 2025" and click the chat icon, **Then** the chat widget opens with the highlighted text pre-populated in the input field
-2. **Given** a user asks "What are the system requirements for Isaac Sim?", **When** the question is submitted, **Then** the chatbot streams the answer token-by-token and displays source links to relevant documentation sections
-3. **Given** a user receives an answer with 3 source links, **When** they click a source link, **Then** they navigate to the exact documentation page mentioned in the answer
-4. **Given** a user asks a follow-up question "Can it run on Windows?", **When** submitted, **Then** the chatbot maintains conversation context and references the previous question in its answer
+1. **Given** a user is reading the "Isaac Platform Overview" page, **When** they highlight "NVIDIA Isaac Sim 2025", **Then** a context menu appears with options including "Ask from AI", "Copy", and other standard text operations
+2. **Given** a user highlights text and the context menu appears, **When** they click "Ask from AI", **Then** the chat widget opens (if closed) with the highlighted text pre-populated in the input field
+3. **Given** a user asks "What are the system requirements for Isaac Sim?", **When** the question is submitted, **Then** the chatbot streams the answer token-by-token and displays source links to relevant documentation sections
+4. **Given** a user receives an answer with 3 source links, **When** they click a source link, **Then** they navigate to the exact documentation page mentioned in the answer
+5. **Given** a user asks a follow-up question "Can it run on Windows?", **When** submitted, **Then** the chatbot maintains conversation context and references the previous question in its answer
+6. **Given** a user closes and reopens the browser, **When** they return to the documentation site and open the chat widget, **Then** their previous conversation history is restored from the database
 
 ---
 
@@ -60,10 +62,11 @@ Readers accessing any page of the published documentation site automatically see
 
 **Acceptance Scenarios**:
 
-1. **Given** a first-time visitor opens `https://[book-domain]/docs/intro`, **When** the page loads, **Then** the chat widget appears in the bottom-right corner within 2 seconds
-2. **Given** the chat widget is loaded, **When** a user clicks it without logging in, **Then** the chat interface opens immediately without authentication prompts
-3. **Given** a user navigates from page A to page B, **When** the new page loads, **Then** the chat widget persists and maintains conversation history
-4. **Given** a user on a mobile device accesses the documentation, **When** the page loads, **Then** the chat widget is responsive and usable on small screens
+1. **Given** a first-time visitor opens `https://[book-domain]/docs/intro`, **When** the page loads, **Then** the chat icon appears in the bottom-right corner within 2 seconds with the chat window initially closed
+2. **Given** the chat icon is visible, **When** a user clicks the chat icon, **Then** the chat widget window opens/expands without authentication prompts
+3. **Given** the chat widget is open, **When** a user clicks the close button or chat icon again, **Then** the chat window collapses back to just the icon
+4. **Given** a user navigates from page A to page B, **When** the new page loads, **Then** the chat widget persists and maintains conversation history
+5. **Given** a user on a mobile device accesses the documentation, **When** the page loads, **Then** the chat widget is responsive and usable on small screens
 
 ---
 
@@ -82,8 +85,10 @@ Readers accessing any page of the published documentation site automatically see
 
 ### Functional Requirements
 
-- **FR-001**: System MUST display a chat widget on every page of the published documentation site
-- **FR-002**: Chat widget MUST allow users to highlight any text on the page and pre-populate the chat input with the highlighted text
+- **FR-001**: System MUST display a chat icon on every page of the published documentation site, with the chat window initially closed
+- **FR-001a**: When user clicks the chat icon, the chat window MUST open/expand; clicking again or the close button MUST collapse it back to just the icon
+- **FR-002**: When user highlights any text on the page, system MUST display a context menu with options including "Ask from AI", "Copy", and other standard text operations
+- **FR-002a**: When user selects "Ask from AI" from the context menu, the chat widget MUST open (if closed) and pre-populate the chat input with the highlighted text
 - **FR-003**: System MUST accept natural language questions without requiring user authentication or login
 - **FR-004**: System MUST stream chatbot responses token-by-token as they are generated (no waiting for complete response)
 - **FR-005**: System MUST include clickable source links in every answer that reference the specific documentation pages used to generate the response
@@ -100,14 +105,17 @@ Readers accessing any page of the published documentation site automatically see
 - **FR-015a**: When Gemini API rate limits are exceeded, system MUST queue the request with exponential backoff retry and display a "Processing..." message to the user until the request completes or fails after maximum retry attempts
 - **FR-016**: System MUST process Markdown files including frontmatter, code blocks, tables, and Mermaid diagrams during indexing
 - **FR-017**: System MUST chunk large documentation pages into semantically meaningful segments (e.g., by heading, paragraph, or code block) with a maximum size of 384 tokens per chunk
-- **FR-018**: Chat widget MUST persist conversation history as users navigate between documentation pages (session-based, no database persistence required)
+- **FR-018**: System MUST persist conversation history in Neon Postgres database, allowing users to restore their chat history across browser sessions and devices
+- **FR-018a**: Chat widget MUST maintain conversation history as users navigate between documentation pages within the same session
+- **FR-018b**: System MUST create a unique session identifier for each user and store it along with all chat messages (user and assistant) in the Neon database
+- **FR-018c**: When a user returns to the documentation site, system MUST retrieve and display their previous conversation history from the Neon database
 - **FR-019**: System MUST respond to off-topic questions (those unrelated to the documentation domain) with a polite refusal message and suggest relevant documentation topics for the user to explore
 
 ### Key Entities
 
 - **Documentation Chunk**: Represents a semantically meaningful segment of a Markdown file (maximum 384 tokens), including the chunk text, source file path, heading/section title, vector embedding, and metadata (page URL, last updated timestamp)
-- **Chat Message**: Represents a single message in a conversation, including message text, role (user or assistant), timestamp, and source references (if assistant message)
-- **Chat Session**: Represents a temporary conversation context, including session ID, message history, and creation timestamp (stored in-memory, no persistence)
+- **Chat Message**: Represents a single message in a conversation, stored in Neon Postgres database with fields: message_id (UUID), session_id (UUID foreign key), message_text (text), role (enum: user/assistant), timestamp (timestamptz), source_references (JSONB array, if assistant message)
+- **Chat Session**: Represents a persistent conversation context, stored in Neon Postgres database with fields: session_id (UUID primary key), user_identifier (text, derived from browser fingerprint or local storage), created_at (timestamptz), last_active_at (timestamptz)
 - **Indexing Job**: Represents a batch re-indexing operation, including list of Markdown files processed, success/failure status, error logs, and completion timestamp
 
 ## Success Criteria *(mandatory)*
@@ -131,9 +139,10 @@ Readers accessing any page of the published documentation site automatically see
 3. **GitHub Integration**: Repository has GitHub Actions enabled and permissions to trigger workflows on push events
 4. **Vector Database Capacity**: Existing Qdrant Cloud instance has sufficient storage and query capacity for the documentation corpus (estimated < 10,000 chunks)
 5. **API Rate Limits**: Gemini API free tier provides sufficient quota for expected query volume (estimated < 1000 queries/day during initial rollout)
-6. **Browser Compatibility**: Target users access documentation via modern browsers supporting ES6+ JavaScript (Chrome 90+, Firefox 88+, Safari 14+)
-7. **Session Management**: In-memory session storage is acceptable since conversation history does not need to persist across server restarts or multiple devices
-8. **Content Ownership**: All documentation content is suitable for public indexing and does not contain sensitive/proprietary information requiring access control
+6. **Browser Compatibility**: Target users access documentation via modern browsers supporting ES6+ JavaScript (Chrome 90+, Firefox 88+, Safari 14+) with localStorage support
+7. **Database Persistence**: Neon Postgres serverless database provides sufficient free tier capacity for storing conversation history (estimated < 10,000 messages/month during initial rollout)
+8. **Session Identification**: Browser localStorage and/or fingerprinting provides reliable user session identification without requiring authentication
+9. **Content Ownership**: All documentation content is suitable for public indexing and does not contain sensitive/proprietary information requiring access control
 
 ## Dependencies *(auto-generated)*
 
@@ -142,6 +151,7 @@ Readers accessing any page of the published documentation site automatically see
 - **Qdrant Cloud**: Vector database service must be operational and accessible at the configured URL
 - **Gemini API**: Google Gemini API service must be available and the configured API key must have valid quota
 - **Cohere API**: Cohere embedding API must be available and the configured API key must have valid quota
+- **Neon Postgres**: Neon serverless Postgres database must be operational and accessible with valid connection string for storing chat history
 - **GitHub Actions**: Repository must have Actions enabled for auto-reindexing workflow execution
 - **Deployment Platform**: Render or Railway platform must be accessible and configured with necessary environment variables
 
@@ -154,12 +164,12 @@ Readers accessing any page of the published documentation site automatically see
 
 ### Out of Scope
 
-- User authentication or authorization
-- User account management or profile storage
-- Persistent conversation history across sessions or devices
+- User authentication or authorization (session identification via browser fingerprinting/localStorage is sufficient)
+- User account management or profile storage (beyond session tracking)
 - Local vector database deployment (must use Qdrant Cloud)
 - Multi-language support (English only)
 - Analytics or usage tracking dashboards
 - Admin interface for managing indexed content
 - Content moderation or filtering
 - Export conversation history functionality
+- Sharing conversations between users

@@ -77,3 +77,5 @@ catkin_markers/
 devel/
 install/
 build/
+# Claude Code configuration (contains secrets)
+.claude.json
