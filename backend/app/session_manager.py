@@ -1,13 +1,10 @@
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 import uuid
-import sys
 
 # Conditional imports to support both running from root and from backend directory
-# Check parent module's __package__ to determine import style
-_parent_package = sys.modules['__main__'].__package__ if '__main__' in sys.modules else None
-
-if _parent_package:
+# Check if this module is part of a package (backend.app.session_manager vs app.session_manager)
+if __package__ and __package__.startswith('backend.'):
     # Running as package from root: uvicorn backend.main:app
     from ..models.chat import ChatMessage, ChatSession
 else:
