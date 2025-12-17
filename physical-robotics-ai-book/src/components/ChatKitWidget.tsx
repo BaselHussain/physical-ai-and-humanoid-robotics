@@ -96,10 +96,27 @@ function ChatKitInner({
 
   console.log('ChatKitInner rendering, ChatKit:', !!ChatKit, 'useChatKit:', !!useChatKit, 'isMinimized:', isMinimized);
 
+  // Determine API URL based on environment
+  const getApiUrl = () => {
+    if (typeof window === 'undefined') return 'http://localhost:8000';
+
+    const hostname = window.location.hostname;
+
+    // Production: deployed on GitHub Pages or custom domain
+    if (hostname === 'baselhussain.github.io' || hostname === 'physical-ai-docs.com') {
+      return 'https://physical-ai-and-humanoid-robotics-6uli.onrender.com';
+    }
+
+    // Development: localhost
+    return 'http://localhost:8000';
+  };
+
+  const apiBaseUrl = getApiUrl();
+
   const { control, setThreadId, setComposerValue } = useChatKit({
     api: {
-      url: 'http://localhost:8000/chatkit',
-      domainKey: 'localhost',
+      url: `${apiBaseUrl}/chatkit`,
+      domainKey: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
     },
     theme: {
       colorScheme: 'light',
