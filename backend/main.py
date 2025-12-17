@@ -21,6 +21,8 @@ if __package__:
     from .app.chatkit_store import MemoryStore
     from .app import database
     from .app import chat_history
+    from .src.auth.routes import router as auth_router
+    from .src.auth.config import engine as auth_engine
 else:
     # Running from backend directory: uvicorn main:app
     from app.rag_agent import docs_agent
@@ -30,6 +32,8 @@ else:
     from app.chatkit_store import MemoryStore
     from app import database
     from app import chat_history
+    from src.auth.routes import router as auth_router
+    from src.auth.config import engine as auth_engine
 
 from chatkit.server import StreamingResult
 
@@ -51,7 +55,10 @@ qdrant = QdrantClient(
 )
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(title="RAG Chatbot API with Authentication")
+
+# Include authentication routes
+app.include_router(auth_router)
 
 # Enable CORS for local development and production
 app.add_middleware(
@@ -68,18 +75,22 @@ app.add_middleware(
 async def startup_event():
     """Initialize database connection pool on startup"""
     try:
-        logger.info("🚀 Starting RAG Chatbot API...")
+        logger.info("🚀 Starting RAG Chatbot API with Authentication...")
         # Initialize Neon Postgres connection pool
         await database.get_pool()
-        logger.info("✅ Database connection pool initialized")
+        logger.info("[OK] Chat history database connection pool initialized")
+        logger.info("[OK] Authentication database (users table) ready")
+        logger.info("[OK] Auth endpoints available at: /auth/signup, /auth/signin, /auth/signout, /auth/session")
     except ValueError as e:
         # NEON_DATABASE_URL not set - log warning but don't crash (optional feature)
-        logger.warning(f"⚠️ Database persistence disabled: {e}")
+        logger.warning(f"[WARNING] Database persistence disabled: {e}")
         logger.warning("Chat history will not be saved. Add NEON_DATABASE_URL to .env to enable persistence.")
+        logger.info("[OK] Authentication database (users table) ready")
     except Exception as e:
         # Database connection failed - log error but continue (graceful degradation)
-        logger.error(f"❌ Database initialization failed: {e}")
+        logger.error(f"[ERROR] Database initialization failed: {e}")
         logger.error("Chat history persistence will not work. Fix database connection to enable it.")
+        logger.info("[OK] Authentication database (users table) ready")
 
 
 @app.on_event("shutdown")
@@ -87,10 +98,17 @@ async def shutdown_event():
     """Close database connection pool on shutdown"""
     try:
         logger.info("👋 Shutting down RAG Chatbot API...")
+
+        # Close chat history database pool
         await database.close_pool()
-        logger.info("✅ Database connection pool closed")
+        logger.info("✅ Chat history database pool closed")
+
+        # Dispose authentication database engine
+        await auth_engine.dispose()
+        logger.info("✅ Authentication database engine disposed")
+
     except Exception as e:
-        logger.error(f"Error closing database pool: {e}")
+        logger.error(f"Error during shutdown: {e}")
 
 # Define health and API routes FIRST (before mounting ChatKit)
 # This ensures these routes take precedence

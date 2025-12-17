@@ -214,6 +214,8 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 - Static files (markdown, diagrams, images), Git version control (001-physical-ai-intro)
 - Python 3.10+, C++, ROS 2 Humble Hawksbill, Isaac Sim 2025.x + NVIDIA Isaac Sim 2025, Isaac ROS, ROS 2 Humble, RealSense D435i drivers, Nav2, cuVSLAM, DetectNet, Gazebo, Docker (004-isaac-platform)
 - File-based (Markdown docs, URDF models, synthetic datasets, Docker images) (004-isaac-platform)
+- Python 3.10+ (FastAPI backend), JavaScript/TypeScript (Docusaurus/React frontend) (authentication)
+- Neon PostgreSQL (accessed via DATABASE_URL from .env) for users, sessions, background profiles (authentication)
 
 ## Recent Changes
 - 001-physical-ai-intro: Added Markdown (CommonMark), Mermaid 10.x, YAML 1.2, Bash 5.x + Docusaurus v3.x, Node.js 18+ LTS, mermaid-js plugin, markdown-link-check, markdownlint
