@@ -116,7 +116,7 @@ function ChatKitInner({
   const { control, setThreadId, setComposerValue } = useChatKit({
     api: {
       url: `${apiBaseUrl}/chatkit`,
-      domainKey: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
+      domainKey: 'domain_pk_6942eec6dc90819384d12f2d4dd04f2702cafb8cb64cf088',
     },
     theme: {
       colorScheme: 'light',
