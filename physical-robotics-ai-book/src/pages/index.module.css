@@ -1,23 +1,15 @@
 /**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
+ * Homepage styles - components handle their own styling
+ * This file is kept minimal as per modern component-based architecture
  */
 
-.heroBanner {
-  padding: 4rem 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
+/* Remove any default padding/margin from main if needed */
+main {
+  margin: 0;
+  padding: 0;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Smooth scroll behavior for anchor links */
+html {
+  scroll-behavior: smooth;
 }
