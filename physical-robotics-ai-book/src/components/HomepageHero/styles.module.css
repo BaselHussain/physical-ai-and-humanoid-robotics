@@ -1,0 +1,41 @@
+.heroBanner {
+  position: relative;
+  overflow: hidden;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  padding: 4rem 2rem;
+}
+
+.heroBackground {
+  position: absolute;
+  inset: 0;
+  background-image: url('/img/circuit-pattern.svg');
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.ctaButton {
+  transition: transform 80ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.ctaButton:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: white;
+}
+
+.ctaButton:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .heroBanner {
+    min-height: 400px;
+    padding: 3rem 1.5rem;
+  }
+}

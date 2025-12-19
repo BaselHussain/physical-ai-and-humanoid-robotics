@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(.specify/scripts/bash/update-agent-context.sh claude)"
+      "Bash(.specify/scripts/bash/update-agent-context.sh claude)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)"
     ]
   }
 }
