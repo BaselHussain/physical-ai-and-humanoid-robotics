@@ -10,10 +10,10 @@ export default function HomepageHero(): JSX.Element {
     <header className={styles.heroBanner}>
       <div className={styles.heroBackground}></div>
       <div className="container relative z-10">
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+        <h1 className="text-5xl text-center md:text-6xl font-bold text-white mb-6">
           {siteConfig.title}
         </h1>
-        <p className="text-xl md:text-2xl text-gray-100 mb-8 max-w-3xl mx-auto">
+        <p className="text-xl md:text-2xl text-gray-100 mb-8 max-w-3xl text-center mx-auto">
           {siteConfig.tagline}
         </p>
         <div className="flex gap-4 justify-center">

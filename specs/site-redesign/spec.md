@@ -137,12 +137,19 @@ A mobile user accesses the site and needs a fully responsive experience across a
 - **FR-016**: Site MUST conform to WCAG 2.1 Level AA accessibility standards including proper ARIA labels, keyboard navigation, and screen reader support
 - **FR-017**: Visual design MUST incorporate modern gradients, circuit-pattern backgrounds, and geometric accents as robotics-themed visual elements
 - **FR-018**: "Start Reading" CTA button MUST navigate to the first module documentation page
+- **FR-019**: Header/Navbar MUST display the book name with stylish typography on the left side WITHOUT the default Docusaurus logo
+- **FR-020**: Header/Navbar MUST display Sign In, Sign Up, and Theme Toggle buttons on the right side
+- **FR-021**: Header/Navbar MUST follow the design inspiration from https://ai-native.panaversity.org/ for modern, clean aesthetics
+- **FR-022**: Header/Navbar MUST be responsive with mobile menu functionality (hamburger menu)
+- **FR-023**: Theme toggle button MUST switch between light and dark modes seamlessly
+- **FR-024**: Header/Navbar MUST remain fixed/sticky at the top during page scrolling
 
 ### Key Entities
 
 - **Homepage**: The landing page containing hero section, module highlights, and feature showcase
 - **Hero Section**: Primary visual area with title, subtitle, and main CTA
 - **Module Card**: Individual card component displaying module icon, title, and description
+- **Header/Navbar**: Top navigation bar with book branding, authentication buttons, and theme toggle
 - **Sidebar Navigation**: Left-side navigation menu showing documentation structure
 - **Documentation Page**: Content pages containing learning material with text, code, tables
 - **Code Block**: Formatted code example with syntax highlighting
@@ -178,9 +185,10 @@ A mobile user accesses the site and needs a fully responsive experience across a
 ### In Scope
 
 - Homepage redesign (hero, module highlights, features showcase)
+- Header/Navbar redesign (book branding, Sign In/Sign Up buttons, theme toggle)
 - Sidebar navigation visual redesign and hover effects
 - Documentation page content styling (typography, code blocks, tables)
-- Mobile responsive layouts for all redesigned areas
+- Mobile responsive layouts for all redesigned areas (including mobile menu)
 - Robotics-themed visual elements and modern gradients
 
 ### Out of Scope

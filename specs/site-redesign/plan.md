@@ -116,6 +116,9 @@ physical-robotics-ai-book/
 │   │   ├── index.tsx                # MODIFIED: New homepage layout
 │   │   └── index.module.css         # MODIFIED: Homepage-specific styles
 │   └── theme/                       # NEW: Docusaurus theme overrides
+│       ├── Navbar/                  # Swizzled navbar component (header)
+│       │   ├── index.tsx
+│       │   └── styles.module.css
 │       ├── DocSidebar/              # Swizzled sidebar component
 │       │   ├── index.tsx
 │       │   └── styles.module.css
@@ -414,7 +417,107 @@ export default function Home(): JSX.Element {
 
 **Rationale**: Replaces default Docusaurus homepage with custom component composition, enabling full control over layout and styling.
 
-#### Step 4: Create HomepageHero Component
+#### Step 4: Customize Header/Navbar (Swizzle Navbar)
+
+**Command**:
+```bash
+npm run swizzle @docusaurus/theme-classic Navbar -- --wrap
+```
+
+**File**: `src/theme/Navbar/index.tsx` (GENERATED, then MODIFIED)
+
+**Component Responsibilities**:
+- Remove default Docusaurus logo, replace with stylish book name/title
+- Add Sign In and Sign Up buttons on the right side
+- Integrate theme toggle button (light/dark mode)
+- Ensure sticky/fixed positioning at top of page
+- Responsive mobile menu (hamburger icon)
+- Follow design inspiration from https://ai-native.panaversity.org/
+
+**Key Features**:
+- Left side: Book name with custom typography (e.g., gradient text, bold font)
+- Right side:
+  - Sign In button (outlined style)
+  - Sign Up button (filled/primary style)
+  - Theme toggle button (icon-based: sun/moon)
+- Sticky header: `position: sticky; top: 0; z-index: 100`
+- Mobile: Hamburger menu for navigation, buttons stack or hide gracefully
+- Smooth transitions on theme toggle and hover states
+
+**Modifications**:
+1. **Remove Logo**: Comment out or remove logo rendering in navbar
+2. **Add Book Title**: Render book name with Tailwind classes:
+   ```tsx
+   <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+     Physical AI & Humanoid Robotics
+   </div>
+   ```
+3. **Add Auth Buttons**:
+   ```tsx
+   <div className="flex items-center gap-3">
+     <button className="px-4 py-2 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+       Sign In
+     </button>
+     <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+       Sign Up
+     </button>
+   </div>
+   ```
+4. **Keep Theme Toggle**: Docusaurus provides this by default, ensure it's visible and styled consistently
+5. **Mobile Menu**: Ensure hamburger menu includes auth buttons on mobile
+6. **Accessibility**: Add ARIA labels to all buttons, ensure keyboard navigation works
+
+**File**: `src/theme/Navbar/styles.module.css` (NEW)
+
+**Custom Styles**:
+```css
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+[data-theme='dark'] .navbar {
+  background-color: rgba(0, 0, 0, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bookTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #2563eb, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .authButtons {
+    flex-direction: column;
+    width: 100%;
+    padding: 1rem;
+  }
+}
+```
+
+**Validation**:
+- Verify navbar displays with book name (no logo)
+- Verify Sign In/Sign Up buttons visible on desktop
+- Verify theme toggle works
+- Test mobile menu includes all elements
+- Check sticky positioning on scroll
+
+#### Step 5: Create HomepageHero Component
 
 **File**: `src/components/HomepageHero/index.tsx` (NEW)
 
@@ -684,6 +787,18 @@ npm run swizzle @docusaurus/theme-classic CodeBlock -- --wrap
 **Command**: `npm run start`
 
 **Manual Test Checklist**:
+0. **Header/Navbar** (test on all pages):
+   - [ ] Book name displays with stylish typography (gradient text) on left side
+   - [ ] No default Docusaurus logo visible
+   - [ ] Sign In button visible and styled correctly (outlined style)
+   - [ ] Sign Up button visible and styled correctly (filled/primary style)
+   - [ ] Theme toggle button visible and functional (switches light/dark mode)
+   - [ ] Header remains sticky/fixed at top when scrolling
+   - [ ] Hover effects work on Sign In/Sign Up buttons
+   - [ ] Mobile: Hamburger menu includes auth buttons and works correctly
+   - [ ] Backdrop blur effect visible on header background
+   - [ ] Header design matches https://ai-native.panaversity.org/ inspiration
+
 1. **Homepage**:
    - [ ] Hero section displays title, subtitle, CTA button
    - [ ] Circuit pattern background visible with low opacity
@@ -948,14 +1063,15 @@ lhci autorun --collect.url=http://localhost:3000 --collect.numberOfRuns=3
 Based on the step-by-step plan above, the implementation should follow this order:
 
 1. **Foundation** (Steps 1-2): Setup Tailwind CSS, create static assets
-2. **Homepage** (Steps 3-6): Update index.tsx, create Hero, ModuleCards, FeatureShowcase
-3. **Navigation** (Step 7): Customize sidebar via swizzling
-4. **Content** (Steps 8-9): Enhance documentation pages and code blocks
-5. **Polish** (Steps 10-11): Add visual themes, validate responsiveness
-6. **Hardening** (Step 12): Implement graceful degradation
-7. **Validation** (Testing Strategy): Full test suite before deployment
+2. **Header** (Step 4): Customize navbar - book name, auth buttons, theme toggle (affects all pages)
+3. **Homepage** (Steps 3, 5-7): Update index.tsx, create Hero, ModuleCards, FeatureShowcase
+4. **Navigation** (Step 8): Customize sidebar via swizzling
+5. **Content** (Steps 9-10): Enhance documentation pages and code blocks
+6. **Polish** (Steps 11-12): Add visual themes, validate responsiveness
+7. **Hardening** (Step 13): Implement graceful degradation
+8. **Validation** (Testing Strategy): Full test suite before deployment
 
-**Estimated Timeline**: 3-5 days for implementation + 1-2 days for testing/fixes
+**Estimated Timeline**: 4-6 days for implementation + 1-2 days for testing/fixes
 
 ## Success Criteria Verification
 

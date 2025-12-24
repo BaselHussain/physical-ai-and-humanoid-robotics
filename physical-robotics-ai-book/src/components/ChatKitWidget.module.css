@@ -1,0 +1,150 @@
+/* Chat Widget Container */
+.chatWidgetContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+/* Minimized Chat Icon */
+.chatIcon {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #2d8cff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(45, 140, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.chatIcon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(45, 140, 255, 0.5);
+}
+
+/* Close Button */
+.closeButton {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10000;
+  background-color: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* ChatKit Wrapper - Responsive */
+.chatKitWrapper {
+  height: 600px;
+  width: 400px;
+  max-width: calc(100vw - 40px); /* Ensure it doesn't exceed viewport width */
+  overscroll-behavior: contain; /* Prevent scroll propagation to background */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .chatWidgetContainer {
+    bottom: 10px;
+    right: 10px;
+    left: 10px; /* Span full width with margins */
+  }
+
+  .chatIcon {
+    bottom: 15px;
+    right: 15px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .chatKitWrapper {
+    width: 100% !important; /* Full width on mobile */
+    max-width: calc(100vw - 20px); /* Account for left/right margins */
+    height: 500px; /* Slightly shorter on mobile */
+  }
+
+  .closeButton {
+    top: 8px;
+    left: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatWidgetContainer {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+  }
+
+  .chatKitWrapper {
+    width: 100% !important;
+    max-width: calc(100vw - 20px);
+    height: 70vh !important; /* 70% of viewport height, not full screen */
+    max-height: 500px;
+  }
+
+  .chatIcon {
+    bottom: 15px;
+    right: 15px;
+    width: 54px;
+    height: 54px;
+  }
+
+  .closeButton {
+    top: 6px;
+    left: 6px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Error and Loading States */
+.errorContainer,
+.loadingContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.errorContainer {
+  background-color: #ff4444;
+  color: white;
+}
+
+.loadingContainer {
+  background-color: #4caf50;
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .errorContainer,
+  .loadingContainer {
+    max-width: calc(100vw - 40px);
+    left: 20px;
+    right: 20px;
+  }
+}
