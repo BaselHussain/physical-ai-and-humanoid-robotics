@@ -1,0 +1,246 @@
+/* Sidebar Container - Minimal Single Wrapper */
+.customSidebar {
+  height: 100%;
+  position: sticky;
+  top: 70px; /* Account for navbar height */
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
+  padding: 0 !important; /* Force zero padding */
+  margin: 0 !important; /* Force zero margin */
+}
+
+/* Override ALL Docusaurus default sidebar styles */
+.customSidebar :global(.theme-doc-sidebar-container) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.customSidebar :global(.theme-doc-sidebar-menu) {
+  padding: 0 0.5rem 0.5rem 0.5rem !important; /* Only side and bottom padding */
+  margin: 0 !important;
+}
+
+.customSidebar :global(.menu__list) {
+  margin: 0 !important;
+  padding-left: 0 !important;
+  list-style-position: outside !important; /* Bullets outside the content */
+}
+
+/* All list items - no extra margin */
+.customSidebar :global(.menu__list-item) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* Module category items - no margin change, keep hierarchy */
+.customSidebar :global(.menu__list-item-collapsible) {
+  margin-left: 0 !important;
+}
+
+/* Module category links ONLY - add padding to push text away from bullet */
+.customSidebar :global(.menu__list-item-collapsible > .menu__link) {
+  padding-left: 1.5rem !important; /* Space between bullet and "Module 01" text */
+}
+
+.customSidebar :global(.menu__list > .menu__list-item:first-child) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Target the direct sidebar content */
+.customSidebar > :global(*) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Sidebar Menu Items - Reduced Spacing */
+.customSidebar :global(.theme-doc-sidebar-item-link),
+.customSidebar :global(.theme-doc-sidebar-item-category) {
+  padding: 0.5rem 0.5rem; /* Reduced vertical padding */
+  border-radius: 0.5rem;
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Hover Effects - Removed to prevent double hover on parent and child */
+.customSidebar :global(.theme-doc-sidebar-item-link:hover),
+.customSidebar :global(.theme-doc-sidebar-item-category:hover) {
+  background-color: transparent !important;
+}
+
+[data-theme='dark'] .customSidebar :global(.theme-doc-sidebar-item-link:hover),
+[data-theme='dark'] .customSidebar :global(.theme-doc-sidebar-item-category:hover) {
+  background-color: transparent !important;
+}
+
+/* Active Page Highlight - No Border */
+.customSidebar :global(.theme-doc-sidebar-item-link-level-1.menu__link--active),
+.customSidebar :global(.theme-doc-sidebar-item-link-level-2.menu__link--active),
+.customSidebar :global(.theme-doc-sidebar-item-link-level-3.menu__link--active) {
+  background-color: rgba(37, 99, 235, 0.1);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .customSidebar :global(.theme-doc-sidebar-item-link-level-1.menu__link--active),
+[data-theme='dark'] .customSidebar :global(.theme-doc-sidebar-item-link-level-2.menu__link--active),
+[data-theme='dark'] .customSidebar :global(.theme-doc-sidebar-item-link-level-3.menu__link--active) {
+  background-color: rgba(96, 165, 250, 0.2);
+}
+
+/* Keyboard Navigation Focus Rings - Removed */
+.customSidebar :global(.theme-doc-sidebar-item-link:focus),
+.customSidebar :global(.theme-doc-sidebar-item-category:focus),
+.customSidebar :global(.menu__link:focus) {
+  outline: none !important;
+}
+
+.customSidebar :global(.theme-doc-sidebar-item-link:focus-visible),
+.customSidebar :global(.theme-doc-sidebar-item-category:focus-visible),
+.customSidebar :global(.menu__link:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Menu Links */
+.customSidebar :global(.menu__link) {
+  border-radius: 0.375rem;
+  transition: background-color 0.1s ease, color 0.1s ease;
+  color: inherit;
+  text-decoration: none;
+}
+
+.customSidebar :global(.menu__link:hover) {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #2563eb;
+}
+
+[data-theme='dark'] .customSidebar :global(.menu__link:hover) {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #60a5fa;
+}
+
+/* Active Menu Link */
+.customSidebar :global(.menu__link--active) {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .customSidebar :global(.menu__link--active) {
+  color: #60a5fa;
+}
+
+/* Category Labels */
+.customSidebar :global(.menu__list-item-collapsible) {
+  margin: 0.1rem 0; /* Reduced from 0.5rem */
+}
+
+.customSidebar :global(.menu__caret) {
+  transition: transform 0.2s ease;
+}
+
+/* Nested Lists - Better Visual Hierarchy */
+.customSidebar :global(.menu__list .menu__list) {
+  margin-top: 0 !important; /* Reduced gap */
+  margin-bottom: 0 !important; /* Reduced gap */
+  margin-left: 1.5rem !important; /* Add left margin for sub-items */
+  padding-left: 1rem;
+  border-left: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .customSidebar :global(.menu__list .menu__list) {
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar Styling */
+.customSidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.customSidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.customSidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.customSidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .customSidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .customSidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .customSidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 996px) {
+  .customSidebar {
+    position: relative;
+    top: 0;
+    max-height: none;
+    padding: 0 0 1rem 0; /* Remove top padding on mobile too */
+  }
+}
+
+@media (max-width: 768px) {
+  .customSidebar :global(.theme-doc-sidebar-item-link),
+  .customSidebar :global(.theme-doc-sidebar-item-category) {
+    padding: 0.625rem 0.875rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .customSidebar {
+    position: relative;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .customSidebar :global(.theme-doc-sidebar-item-link),
+  .customSidebar :global(.theme-doc-sidebar-item-category) {
+    background-color: transparent !important;
+    border: none !important;
+  }
+}
+
+/* Accessibility: High Contrast Mode */
+@media (prefers-contrast: high) {
+  .customSidebar :global(.menu__link--active) {
+    border: 2px solid currentColor;
+  }
+
+  .customSidebar :global(.menu__link:focus) {
+    outline: none !important;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .customSidebar :global(.theme-doc-sidebar-item-link),
+  .customSidebar :global(.theme-doc-sidebar-item-category),
+  .customSidebar :global(.menu__link),
+  .customSidebar :global(.menu__caret) {
+    transition: none;
+  }
+}
+
+/* ARIA Current Page Indicator - No Border */
+.customSidebar :global([aria-current="page"]) {
+  background-color: rgba(37, 99, 235, 0.15);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .customSidebar :global([aria-current="page"]) {
+  background-color: rgba(96, 165, 250, 0.25);
+}

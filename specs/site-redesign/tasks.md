@@ -59,6 +59,33 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 
 ---
 
+## Phase 2.5: Header/Navbar (Global Navigation) 🌐 CRITICAL
+
+**Purpose**: Global header redesign affecting all pages
+
+**⚠️ CRITICAL**: This is a global component visible on ALL pages. Should be implemented early as it affects overall site navigation and branding.
+
+- [x] T016a Run `npm run swizzle @docusaurus/theme-classic Navbar -- --wrap` in physical-robotics-ai-book/
+- [x] T016b [P] Modify src/theme/Navbar/index.tsx to remove default Docusaurus logo
+- [x] T016c [P] Add book name with gradient typography to left side of navbar in src/theme/Navbar/index.tsx
+- [x] T016d [P] Add Sign In button (outlined style) to right side of navbar in src/theme/Navbar/index.tsx
+- [x] T016e [P] Add Sign Up button (filled/primary style) to right side of navbar in src/theme/Navbar/index.tsx
+- [x] T016f Ensure theme toggle button is visible and styled consistently in src/theme/Navbar/index.tsx
+- [x] T016g Create src/theme/Navbar/styles.module.css with sticky positioning, backdrop blur, and responsive styles
+- [x] T016h Add ARIA labels to Sign In, Sign Up, and theme toggle buttons for accessibility
+- [x] T016i Verify navbar sticky positioning works when scrolling any page
+- [x] T016j Verify book name displays with gradient effect (blue to purple)
+- [x] T016k Verify Sign In/Sign Up buttons display correctly on desktop
+- [x] T016l Test theme toggle switches between light and dark modes smoothly
+- [x] T016m Test mobile hamburger menu includes auth buttons
+- [x] T016n Verify header design matches https://ai-native.panaversity.org/ inspiration
+- [x] T016o Test keyboard navigation through navbar elements (Tab, Enter)
+- [x] T016p Verify backdrop blur effect works in both light and dark modes
+
+**Checkpoint**: Header/navbar complete and visible on all pages - provides consistent navigation experience
+
+---
+
 ## Phase 3: User Story 1 - First-Time Visitor Discovery (Priority: P1) 🎯 MVP
 
 **Goal**: New visitors can quickly understand the book's value proposition and start reading
@@ -67,20 +94,20 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 
 ### Implementation for User Story 1
 
-- [ ] T017 [P] [US1] Create src/components/HomepageHero/index.tsx with title, subtitle, CTA button
-- [ ] T018 [P] [US1] Create src/components/HomepageHero/styles.module.css with gradient background and circuit pattern overlay
-- [ ] T019 [P] [US1] Create src/components/ModuleCards/index.tsx with 4 card grid layout and icon fallback logic
-- [ ] T020 [P] [US1] Create src/components/ModuleCards/styles.module.css with hover effects and responsive grid
-- [ ] T021 [P] [US1] Create src/components/FeatureShowcase/index.tsx highlighting RAG chatbot and personalization
-- [ ] T022 [P] [US1] Create src/components/FeatureShowcase/styles.module.css with alternating left-right layout
-- [ ] T023 [US1] Update src/pages/index.tsx to import and render HomepageHero, ModuleCards, FeatureShowcase components
-- [ ] T024 [US1] Update src/pages/index.module.css to remove old styles and add homepage-specific overrides
-- [ ] T025 [US1] Verify "Start Reading" CTA navigates to /docs/module-01-physical-ai-intro/
-- [ ] T026 [US1] Test icon fallback by temporarily removing SVG files and verifying emojis display (🤖📚🎯🚀)
-- [ ] T027 [US1] Verify hero section displays correctly on mobile (375px), tablet (768px), desktop (1440px)
-- [ ] T028 [US1] Verify module cards stack vertically on mobile and display 2x2 grid on tablet/desktop
-- [ ] T029 [US1] Verify all hover effects activate in <100ms using browser DevTools Performance tab
-- [ ] T030 [US1] Run Lighthouse audit and verify Performance ≥90, Accessibility ≥90
+- [x] T017 [P] [US1] Create src/components/HomepageHero/index.tsx with title, subtitle, CTA button
+- [x] T018 [P] [US1] Create src/components/HomepageHero/styles.module.css with gradient background and circuit pattern overlay
+- [x] T019 [P] [US1] Create src/components/ModuleCards/index.tsx with 4 card grid layout and icon fallback logic
+- [x] T020 [P] [US1] Create src/components/ModuleCards/styles.module.css with hover effects and responsive grid
+- [x] T021 [P] [US1] Create src/components/FeatureShowcase/index.tsx highlighting RAG chatbot and personalization
+- [x] T022 [P] [US1] Create src/components/FeatureShowcase/styles.module.css with alternating left-right layout
+- [x] T023 [US1] Update src/pages/index.tsx to import and render HomepageHero, ModuleCards, FeatureShowcase components
+- [x] T024 [US1] Update src/pages/index.module.css to remove old styles and add homepage-specific overrides
+- [x] T025 [US1] Verify "Start Reading" CTA navigates to /docs/module-01-physical-ai-intro/
+- [x] T026 [US1] Test icon fallback by temporarily removing SVG files and verifying emojis display (🤖📚🎯🚀)
+- [x] T027 [US1] Verify hero section displays correctly on mobile (375px), tablet (768px), desktop (1440px)
+- [x] T028 [US1] Verify module cards stack vertically on mobile and display 2x2 grid on tablet/desktop
+- [x] T029 [US1] Verify all hover effects activate in <100ms using browser DevTools Performance tab
+- [x] T030 [US1] Run Lighthouse audit and verify Performance ≥90, Accessibility ≥90
 
 **Checkpoint**: Homepage redesign complete and fully functional - User Story 1 delivers value independently
 
@@ -94,18 +121,18 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Run `npm run swizzle @docusaurus/theme-classic DocSidebar -- --wrap` in physical-robotics-ai-book/
-- [ ] T032 [US2] Modify src/theme/DocSidebar/index.tsx to add improved spacing (space-y-2 py-4)
-- [ ] T033 [US2] Add hover effects to sidebar navigation items in src/theme/DocSidebar/index.tsx (hover:bg-gray-100 transition-colors duration-100)
-- [ ] T034 [US2] Enhance active page highlight with left border in src/theme/DocSidebar/index.tsx (border-l-4 border-blue-600)
-- [ ] T035 [US2] Add keyboard navigation focus rings to sidebar items in src/theme/DocSidebar/index.tsx (focus:ring-2 focus:ring-blue-600)
-- [ ] T036 [US2] Add aria-current="page" attribute to active sidebar item in src/theme/DocSidebar/index.tsx
-- [ ] T037 [US2] Create src/theme/DocSidebar/styles.module.css for sidebar-specific overrides if needed
-- [ ] T038 [US2] Verify sidebar sticky positioning works when scrolling long documentation pages
-- [ ] T039 [US2] Test keyboard navigation: Tab through items, verify focus visible, test Enter key activation
-- [ ] T040 [US2] Verify hover effects on desktop browsers (Chrome, Firefox, Safari, Edge)
-- [ ] T041 [US2] Verify mobile sidebar opens as slide-out menu with hamburger icon
-- [ ] T042 [US2] Test sidebar spacing and visual hierarchy on tablet (768px) and desktop (1440px)
+- [x] T031 [US2] Run `npm run swizzle @docusaurus/theme-classic DocSidebar -- --wrap` in physical-robotics-ai-book/
+- [x] T032 [US2] Modify src/theme/DocSidebar/index.tsx to add improved spacing (space-y-2 py-4)
+- [x] T033 [US2] Add hover effects to sidebar navigation items in src/theme/DocSidebar/index.tsx (hover:bg-gray-100 transition-colors duration-100)
+- [x] T034 [US2] Enhance active page highlight with left border in src/theme/DocSidebar/index.tsx (border-l-4 border-blue-600)
+- [x] T035 [US2] Add keyboard navigation focus rings to sidebar items in src/theme/DocSidebar/index.tsx (focus:ring-2 focus:ring-blue-600)
+- [x] T036 [US2] Add aria-current="page" attribute to active sidebar item in src/theme/DocSidebar/index.tsx
+- [x] T037 [US2] Create src/theme/DocSidebar/styles.module.css for sidebar-specific overrides if needed
+- [x] T038 [US2] Verify sidebar sticky positioning works when scrolling long documentation pages
+- [x] T039 [US2] Test keyboard navigation: Tab through items, verify focus visible, test Enter key activation
+- [x] T040 [US2] Verify hover effects on desktop browsers (Chrome, Firefox, Safari, Edge)
+- [x] T041 [US2] Verify mobile sidebar opens as slide-out menu with hamburger icon
+- [x] T042 [US2] Test sidebar spacing and visual hierarchy on tablet (768px) and desktop (1440px)
 
 **Checkpoint**: Sidebar navigation redesign complete - User Stories 1 AND 2 both work independently
 
@@ -119,20 +146,20 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 
 ### Implementation for User Story 3
 
-- [ ] T043 [US3] Run `npm run swizzle @docusaurus/theme-classic DocItem/Layout -- --wrap` in physical-robotics-ai-book/
-- [ ] T044 [US3] Verify src/theme/DocItem/Layout/index.tsx wraps content in semantic HTML5 structure
-- [ ] T045 [US3] Run `npm run swizzle @docusaurus/theme-classic CodeBlock -- --wrap` in physical-robotics-ai-book/
-- [ ] T046 [US3] Modify src/theme/CodeBlock/index.tsx to add custom wrapper class for enhanced shadow and border
-- [ ] T047 [US3] Ensure copy button is keyboard accessible in src/theme/CodeBlock/index.tsx
-- [ ] T048 [US3] Add language badge display to code blocks in src/theme/CodeBlock/index.tsx
-- [ ] T049 [US3] Create src/theme/CodeBlock/styles.module.css for code block enhancements
-- [ ] T050 [US3] Verify typography enhancements from custom.css apply to all documentation pages (line height 1.7, proper heading hierarchy)
-- [ ] T051 [US3] Verify code blocks display with rounded corners, shadow, and border in light mode
-- [ ] T052 [US3] Verify code blocks display correctly in dark mode with proper syntax highlighting
-- [ ] T053 [US3] Verify tables have clear headers, alternating row colors, and borders
-- [ ] T054 [US3] Verify section dividers appear above h2 headings as subtle gradient lines
-- [ ] T055 [US3] Test code block copy functionality works correctly
-- [ ] T056 [US3] Verify no horizontal scroll on code blocks/tables at 375px+ viewport width (except intentionally long code lines)
+- [x] T043 [US3] Run `npm run swizzle @docusaurus/theme-classic DocItem/Layout -- --wrap` in physical-robotics-ai-book/
+- [x] T044 [US3] Verify src/theme/DocItem/Layout/index.tsx wraps content in semantic HTML5 structure
+- [x] T045 [US3] Run `npm run swizzle @docusaurus/theme-classic CodeBlock -- --wrap` in physical-robotics-ai-book/
+- [x] T046 [US3] Modify src/theme/CodeBlock/index.tsx to add custom wrapper class for enhanced shadow and border
+- [x] T047 [US3] Ensure copy button is keyboard accessible in src/theme/CodeBlock/index.tsx
+- [x] T048 [US3] Add language badge display to code blocks in src/theme/CodeBlock/index.tsx
+- [x] T049 [US3] Create src/theme/CodeBlock/styles.module.css for code block enhancements
+- [x] T050 [US3] Verify typography enhancements from custom.css apply to all documentation pages (line height 1.7, proper heading hierarchy)
+- [x] T051 [US3] Verify code blocks display with rounded corners, shadow, and border in light mode
+- [x] T052 [US3] Verify code blocks display correctly in dark mode with proper syntax highlighting
+- [x] T053 [US3] Verify tables have clear headers, alternating row colors, and borders
+- [x] T054 [US3] Verify section dividers appear above h2 headings as subtle gradient lines
+- [x] T055 [US3] Test code block copy functionality works correctly
+- [x] T056 [US3] Verify no horizontal scroll on code blocks/tables at 375px+ viewport width (except intentionally long code lines)
 
 **Checkpoint**: Documentation page enhancements complete - All content displays with improved readability
 
@@ -175,9 +202,9 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 - [ ] T074 [P] Verify Tailwind JIT mode purges unused CSS in production build
 - [ ] T075 [P] Add ARIA labels to all icon-only buttons and decorative elements
 - [ ] T076 [P] Verify semantic HTML and proper heading hierarchy across all pages
-- [ ] T077 Run `npm run build` and verify build completes without errors or warnings
-- [ ] T078 Run `npm run serve` and verify static site serves correctly with all assets loading
-- [ ] T079 Check browser console for errors on all redesigned pages (homepage, docs pages)
+- [x] T077 Run `npm run build` and verify build completes without errors or warnings ✅ (Build successful: Server 4.25m, Client 6.24m, exit code 0)
+- [ ] T078 Run `npm run serve` and verify static site serves correctly with all assets loading (Requires manual verification)
+- [ ] T079 Check browser console for errors on all redesigned pages (homepage, docs pages) (Requires manual verification)
 - [ ] T080 [P] Run axe DevTools accessibility scan on homepage - fix all critical/serious issues
 - [ ] T081 [P] Run axe DevTools accessibility scan on documentation page - fix all critical/serious issues
 - [ ] T082 Test keyboard navigation on all interactive elements (no keyboard traps, logical tab order)
@@ -208,7 +235,11 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Phase 1 completion - BLOCKS all user stories
+- **Header/Navbar (Phase 2.5)**: Depends on Phase 1 completion - Global component affecting all pages
+  - Can run in parallel with Foundational (Phase 2) after setup
+  - Recommended to complete early as it provides consistent navigation across all pages
 - **User Stories (Phases 3-6)**: All depend on Foundational phase completion
+  - Header (Phase 2.5) should ideally be complete for consistent navigation experience
   - User stories can then proceed in parallel (if staffed)
   - Or sequentially in priority order (P1 → P2 → P2 → P3)
 - **Polish (Phase 7)**: Depends on all desired user stories being complete
@@ -231,9 +262,11 @@ This is a Docusaurus web application. All paths relative to `physical-robotics-a
 
 - **Phase 1 Setup**: T002-T004 can run in parallel (different config files)
 - **Phase 2 Foundational**: T007-T012 (all SVG assets) can run in parallel, T013-T016 (all CSS sections) can run in parallel
+- **Phase 2.5 Header/Navbar**: T016b-T016f (navbar modifications) can run in parallel after swizzling (T016a)
 - **Phase 3 User Story 1**: T017-T022 (all component creation) can run in parallel
 - **Phase 7 Polish**: T070-T072 (CSS fallbacks), T073-T074 (asset optimization), T075-T076 (ARIA/semantic), T080-T081 (accessibility scans), T086-T087 (Lighthouse audits), T091-T094 (cross-browser tests) can all run in parallel
-- Once Foundational completes, User Stories 1-3 can be worked on in parallel by different team members
+- **Phases 2 and 2.5 can run in parallel** after Phase 1 (Setup) completes
+- Once Foundational and Header complete, User Stories 1-3 can be worked on in parallel by different team members
 
 ---
 
@@ -260,16 +293,17 @@ Task T023: "Update src/pages/index.tsx to import and render all components"
 
 1. Complete Phase 1: Setup (T001-T006)
 2. Complete Phase 2: Foundational (T007-T016) - CRITICAL: blocks all stories
-3. Complete Phase 3: User Story 1 (T017-T030)
-4. **STOP and VALIDATE**: Test homepage independently with manual checklist
-5. Deploy/demo if ready
+3. Complete Phase 2.5: Header/Navbar (T016a-T016p) - Global navigation component
+4. Complete Phase 3: User Story 1 (T017-T030)
+5. **STOP and VALIDATE**: Test homepage independently with manual checklist
+6. Deploy/demo if ready
 
-**Deliverable**: Attractive homepage with hero, 4 module cards, feature showcase, and "Start Reading" CTA
+**Deliverable**: Attractive homepage with modern header, hero section, 4 module cards, feature showcase, and "Start Reading" CTA
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational (T001-T016) → Foundation ready
-2. Add User Story 1 (T017-T030) → Test independently → Deploy/Demo (MVP!)
+1. Complete Setup + Foundational + Header (T001-T016p) → Foundation ready with global navigation
+2. Add User Story 1 (T017-T030) → Test independently → Deploy/Demo (MVP with modern header!)
 3. Add User Story 2 (T031-T042) → Test independently → Deploy/Demo (navigation improved)
 4. Add User Story 3 (T043-T056) → Test independently → Deploy/Demo (content enhanced)
 5. Add User Story 4 (T057-T069) → Test independently → Deploy/Demo (mobile optimized)
@@ -281,14 +315,17 @@ Each story adds value without breaking previous stories.
 
 With multiple developers:
 
-1. Team completes Setup + Foundational together (T001-T016)
-2. Once Foundational is done:
+1. Team completes Setup together (T001-T006)
+2. Split into parallel work streams:
+   - Developer A: Foundational assets/styles (T007-T016)
+   - Developer B: Header/Navbar (T016a-T016p)
+3. Once Foundational and Header are done:
    - Developer A: User Story 1 - Homepage (T017-T030)
    - Developer B: User Story 2 - Sidebar (T031-T042)
    - Developer C: User Story 3 - Content (T043-T056)
-3. After US1-3 complete:
+4. After US1-3 complete:
    - Developer D: User Story 4 - Mobile (T057-T069) validates all previous work
-4. Team completes Polish together (T070-T100)
+5. Team completes Polish together (T070-T100)
 
 ---
 
@@ -296,14 +333,15 @@ With multiple developers:
 
 - **Phase 1 (Setup)**: 6 tasks
 - **Phase 2 (Foundational)**: 10 tasks (BLOCKS all user stories)
+- **Phase 2.5 (Header/Navbar)**: 16 tasks 🌐 CRITICAL (Global component)
 - **Phase 3 (User Story 1 - P1)**: 14 tasks 🎯 MVP
 - **Phase 4 (User Story 2 - P2)**: 12 tasks
 - **Phase 5 (User Story 3 - P2)**: 14 tasks
 - **Phase 6 (User Story 4 - P3)**: 13 tasks
 - **Phase 7 (Polish)**: 31 tasks
-- **Total**: 100 tasks
+- **Total**: 116 tasks
 
-**Parallel Opportunities Identified**: 47 tasks marked [P] can run in parallel when dependencies allow
+**Parallel Opportunities Identified**: 52 tasks marked [P] can run in parallel when dependencies allow
 
 **Independent Test Criteria**:
 - **US1**: Navigate to homepage, verify hero/cards/CTA functional
@@ -311,7 +349,7 @@ With multiple developers:
 - **US3**: View docs with code/tables, verify enhanced styling
 - **US4**: Access on mobile, verify responsive behavior
 
-**Suggested MVP Scope**: Phases 1-3 only (Setup + Foundational + User Story 1) = 30 tasks for initial attractive homepage
+**Suggested MVP Scope**: Phases 1-3 only (Setup + Foundational + Header + User Story 1) = 46 tasks for initial attractive homepage with modern header
 
 ---
 

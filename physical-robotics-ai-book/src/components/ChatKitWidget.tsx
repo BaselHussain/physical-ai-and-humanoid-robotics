@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import styles from './ChatKitWidget.module.css';
 
 interface ChatKitWidgetProps {
   prePopulatedText?: string;
@@ -46,7 +47,7 @@ export function ChatKitWidget({ prePopulatedText, onClearPrePopulatedText }: Cha
   if (error) {
     console.log('Showing error state');
     return (
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, backgroundColor: '#ff4444', color: 'white', padding: '20px', borderRadius: '8px', maxWidth: '400px' }}>
+      <div className={styles.errorContainer}>
         <strong>ChatKit Error:</strong> {error}
       </div>
     );
@@ -55,7 +56,7 @@ export function ChatKitWidget({ prePopulatedText, onClearPrePopulatedText }: Cha
   if (!ChatKitComponents) {
     console.log('Showing loading state');
     return (
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, backgroundColor: '#4CAF50', color: 'white', padding: '20px', borderRadius: '8px' }}>
+      <div className={styles.loadingContainer}>
         Loading ChatKit...
       </div>
     );
@@ -178,7 +179,7 @@ function ChatKitInner({
   if (error) {
     console.log('Rendering error UI');
     return (
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, backgroundColor: 'white', border: '3px solid red', padding: '20px', borderRadius: '8px', maxWidth: '400px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+      <div className={styles.errorContainer} style={{ backgroundColor: 'white', border: '3px solid red' }}>
         <h3 style={{ color: 'red', margin: '0 0 10px 0', fontSize: '18px' }}>ChatKit Error</h3>
         <p style={{ margin: 0, fontSize: '14px', color: '#333' }}>{error}</p>
         <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#666' }}>
@@ -195,32 +196,9 @@ function ChatKitInner({
     <>
       {/* Minimized chat icon */}
       <div
+        className={styles.chatIcon}
         onClick={onToggleMinimize}
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          zIndex: 9999,
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          backgroundColor: '#2D8CFF',
-          color: 'white',
-          display: isMinimized ? 'flex' : 'none',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(45, 140, 255, 0.4)',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.boxShadow = '0 6px 16px rgba(45, 140, 255, 0.5)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(45, 140, 255, 0.4)';
-        }}
+        style={{ display: isMinimized ? 'flex' : 'none' }}
         title="Open Chat"
       >
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -229,38 +207,14 @@ function ChatKitInner({
       </div>
 
       {/* Full chat widget - kept mounted for instant appearance */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '20px',
-        zIndex: 9999,
-        display: isMinimized ? 'none' : 'block',
-      }}>
+      <div
+        className={styles.chatWidgetContainer}
+        style={{ display: isMinimized ? 'none' : 'block' }}
+      >
         {/* Close button - positioned to avoid ChatKit's clock icon */}
         <button
+          className={styles.closeButton}
           onClick={onToggleMinimize}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            zIndex: 10000,
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
-          }}
           title="Minimize Chat"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -268,10 +222,9 @@ function ChatKitInner({
           </svg>
         </button>
 
-        <ChatKit
-          control={control}
-          style={{ height: '600px', width: '400px' }}
-        />
+        <div className={styles.chatKitWrapper}>
+          <ChatKit control={control} />
+        </div>
       </div>
     </>
   );

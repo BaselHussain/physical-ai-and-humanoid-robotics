@@ -1,0 +1,118 @@
+/* DocItem Container - Semantic HTML5 Structure */
+.docItemContainer {
+  width: 100%;
+  max-width: 100%;
+}
+
+.docItemContent {
+  width: 100%;
+}
+
+/* Typography Enhancements are applied via global custom.css */
+/* This file provides additional doc-specific overrides if needed */
+
+/* Ensure proper spacing between major sections */
+.docItemContent :global(.markdown) > * + * {
+  margin-top: 1.5rem;
+}
+
+.docItemContent :global(.markdown) > h2 {
+  margin-top: 3rem;
+}
+
+.docItemContent :global(.markdown) > h3 {
+  margin-top: 2.5rem;
+}
+
+/* Code blocks within content */
+.docItemContent :global(.theme-code-block) {
+  margin: 1.5rem 0;
+}
+
+/* Tables within content */
+.docItemContent :global(.markdown) table {
+  margin: 2rem 0;
+}
+
+/* Lists within content */
+.docItemContent :global(.markdown) ul,
+.docItemContent :global(.markdown) ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+}
+
+.docItemContent :global(.markdown) li {
+  margin: 0.5rem 0;
+}
+
+/* Blockquotes */
+.docItemContent :global(.markdown) blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+  border-left: 4px solid #2563eb;
+  color: #4b5563;
+  font-style: italic;
+}
+
+[data-theme='dark'] .docItemContent :global(.markdown) blockquote {
+  border-left-color: #60a5fa;
+  color: #9ca3af;
+}
+
+/* Images */
+.docItemContent :global(.markdown) img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+/* Horizontal Rules (Section Dividers) */
+.docItemContent :global(.markdown) hr {
+  margin: 3rem 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e5e7eb 50%, transparent);
+}
+
+[data-theme='dark'] .docItemContent :global(.markdown) hr {
+  background: linear-gradient(to right, transparent, #374151 50%, transparent);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .docItemContent :global(.markdown) h1 {
+    font-size: 2rem;
+  }
+
+  .docItemContent :global(.markdown) h2 {
+    font-size: 1.75rem;
+    margin-top: 2rem;
+  }
+
+  .docItemContent :global(.markdown) h3 {
+    font-size: 1.5rem;
+    margin-top: 1.75rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .docItemContent :global(.markdown) {
+    font-size: 12pt;
+    line-height: 1.6;
+  }
+
+  .docItemContent :global(.markdown) h2 {
+    page-break-before: always;
+  }
+
+  .docItemContent :global(.markdown) h2:first-of-type {
+    page-break-before: avoid;
+  }
+
+  .docItemContent :global(.markdown) pre,
+  .docItemContent :global(.markdown) table {
+    page-break-inside: avoid;
+  }
+}
