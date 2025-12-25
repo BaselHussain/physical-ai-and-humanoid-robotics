@@ -61,6 +61,7 @@
 - Q: How will FastAPI validate Better Auth tokens? → A: FastAPI uses PyJWT to validate JWT tokens against Better Auth's JWKS endpoint (RS256 asymmetric signing)
 - Q: Where will custom user background fields be stored? → A: In Better Auth's Neon PostgreSQL database, either as custom columns or JSONB metadata field
 - Q: How will FastAPI access user background for personalization? → A: Custom fields included as JWT custom claims, or FastAPI fetches from Better Auth API using user ID (sub)
+- Q: How will Better Auth and FastAPI services be deployed? → A: Better Auth and FastAPI as separate Render services with cross-origin communication (auth.yourdomain.com and api.yourdomain.com)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -234,17 +235,22 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 ## Constraints *(mandatory)*
 
-- Must use FastAPI-Users as the authentication library (Python-native equivalent of Better Auth)
-- Must use Neon PostgreSQL accessed via DATABASE_URL from .env (no SQLite or other databases)
-- Must replace current in-memory session management completely with JWT-based sessions
+- Must use Better Auth as the authentication library (original requirement)
+- Better Auth runs as **separate Node.js microservice**, not embedded in FastAPI
+- **Deployment**: Better Auth and FastAPI deployed as **separate Render services** with distinct URLs (e.g., auth.yourdomain.com and api.yourdomain.com)
+- **CORS Configuration**: Both services must configure CORS to allow cross-origin requests from Docusaurus frontend domain
+- **Shared Database**: Both services connect to same Neon PostgreSQL instance via DATABASE_URL
+- FastAPI validates JWT tokens but does NOT handle authentication logic directly
+- Must replace current in-memory session management with JWT-based authentication
 - Must be deployable on Render free tier (no features requiring paid infrastructure)
-- Must integrate with existing FastAPI backend without major architectural changes
-- Must integrate with existing Docusaurus frontend without disrupting current documentation site functionality
 - Must not expose sensitive user data (passwords, email) in chat logs or RAG agent context
 - Must keep existing RAG agent (docs_agent) functionality unchanged - only add personalization layer
-- Background questions must be answered during signup only (not iteratively updated during this phase)
-- Personalization must be transparent to users (they should understand why responses differ)
-- Authentication UI must be accessible from the existing chat widget interface
+- Background questions answered during signup only (not iteratively updated this phase)
+- Personalization must be transparent to users
+- Authentication UI accessible from navbar Sign In/Sign Up buttons (triggers modals)
+- Frontend calls Better Auth REST API at auth service URL for signup/signin
+- Frontend sends JWT to FastAPI at API service URL in Authorization header
+- FastAPI validates tokens via Better Auth JWKS endpoint (cross-service communication)
 
 ## Non-Functional Requirements *(optional - include if relevant)*
 
