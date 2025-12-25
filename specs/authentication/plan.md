@@ -1,6 +1,6 @@
-# Implementation Plan: RAG Chatbot Authentication with FastAPI-Users
+# Implementation Plan: RAG Chatbot Authentication with Better Auth
 
-**Branch**: `authentication` | **Date**: 2025-12-17 | **Updated**: 2025-12-25 (Navbar Integration) | **Spec**: [spec.md](./spec.md)
+**Branch**: `authentication` | **Date**: 2025-12-17 | **Updated**: 2025-12-25 (Better Auth Microservice Architecture) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/authentication/spec.md`
 
 ## Integration Update (2025-12-25)
@@ -16,27 +16,42 @@
 ## Architectural Decision
 
 **Original Requirement**: Better Auth
-**Implementation**: FastAPI-Users
+**Implementation**: Better Auth as separate Node.js microservice + FastAPI for RAG chatbot
 
-**Rationale**: Better Auth is JavaScript/TypeScript-only with no Python SDK. Confirmed via Better Auth MCP server that it requires Node.js runtime and only supports JavaScript frameworks. FastAPI-Users is the industry-standard Python equivalent, providing identical functionality: user registration with custom fields, email/password authentication, JWT session management, Neon PostgreSQL storage, and Argon2 password hashing.
+**Rationale**: After analysis via Better Auth MCP server, confirmed that Better Auth CAN be used with FastAPI through a **microservices architecture**. Better Auth runs as a standalone Node.js authentication service, while FastAPI consumes it via JWT validation. This provides:
+
+1. **Meets original requirement**: Uses Better Auth as specified
+2. **Modern microservices pattern**: Each service has single responsibility (auth vs. chatbot)
+3. **Better Auth advantages**:
+   - Native Neon PostgreSQL support (Kysely adapter)
+   - Built-in JWT with custom claims for user background
+   - REST API endpoints (`/api/auth/*`)
+   - Production-ready session management with refresh tokens
+   - Secure password hashing (Argon2)
+4. **FastAPI integration**: Validates JWT tokens using Better Auth's JWKS endpoint (RS256), extracts user profile from JWT custom claims
 
 ## Summary
 
-Implement user authentication for the RAG chatbot using FastAPI-Users library, with custom background profiling (programming experience, ROS 2 familiarity, hardware access) to personalize chatbot responses. Replace existing in-memory session management with JWT-based sessions stored in Neon PostgreSQL. Deploy on Render free tier.
+Implement user authentication for the RAG chatbot using **Better Auth microservice** with custom background profiling (programming experience, ROS 2 familiarity, hardware access) to personalize chatbot responses. Better Auth runs as separate Node.js service, FastAPI validates JWT tokens and personalizes RAG responses. Deploy both services on Render free tier with shared Neon PostgreSQL.
 
-**Core Flow**: User signs up → Background questions collected → FastAPI-Users stores profile in metadata → User chats → System fetches background → RAG agent system prompt dynamically adjusted → Personalized response generated
+**Core Flow**: User signs up → Better Auth collects background → Stores in metadata + JWT claims → User chats with JWT → FastAPI validates token → Extracts background from JWT → RAG agent system prompt dynamically adjusted → Personalized response generated
 
 ## Technical Context
 
-**Language/Version**: Python 3.10+ (FastAPI backend), JavaScript/TypeScript (Docusaurus/React frontend)
-**Primary Dependencies**:
-- Backend: FastAPI-Users 13+, FastAPI 0.100+, SQLAlchemy 2.0+ (async), asyncpg (Neon PostgreSQL driver), uv (package manager)
-- Frontend: React 18+, Docusaurus 3.x
+**Language/Version**:
+- Better Auth Service: Node.js 18+ LTS, TypeScript
+- FastAPI Service: Python 3.10+
+- Frontend: JavaScript/TypeScript (React 18+ with Docusaurus 3.x)
 
-**Storage**: Neon PostgreSQL (accessed via DATABASE_URL from .env) for users, sessions, background profiles
-**Testing**: pytest (backend), Jest/React Testing Library (frontend)
-**Target Platform**: Render free tier (backend deployment), GitHub Pages (frontend static site)
-**Project Type**: Web application (FastAPI backend + Docusaurus frontend)
+**Primary Dependencies**:
+- Better Auth Service: Better Auth library, Kysely (PostgreSQL adapter), Node.js runtime
+- FastAPI Service: FastAPI 0.100+, PyJWT[crypto] (RS256 validation), httpx (JWKS fetching), uv (package manager)
+- Frontend: React 18+, Docusaurus 3.x, Better Auth client SDK
+
+**Storage**: Neon PostgreSQL (shared between Better Auth and FastAPI via DATABASE_URL from .env)
+**Testing**: pytest (FastAPI), Jest (Better Auth + React frontend)
+**Target Platform**: Render free tier (two separate web services: Better Auth + FastAPI), GitHub Pages (frontend static site)
+**Project Type**: Microservices architecture (Better Auth auth service + FastAPI RAG service + Docusaurus frontend)
 **Performance Goals**:
 - Signup/signin < 2 seconds
 - Background data retrieval < 500ms
@@ -44,17 +59,19 @@ Implement user authentication for the RAG chatbot using FastAPI-Users library, w
 - Chat response (including personalization) < 5 seconds
 
 **Constraints**:
-- FastAPI-Users default password validation with Argon2 hashing
-- Neon PostgreSQL free tier (connection pooling required)
-- Render free tier deployment compatibility
+- Better Auth default password validation with Argon2 hashing
+- Neon PostgreSQL free tier (connection pooling required, shared across both services)
+- Render free tier deployment (two separate web services with distinct URLs)
+- CORS configuration required (production domain + subdomains: *.yourdomain.com)
 - No modifications to existing RAG agent core logic
 - Preserve existing Docusaurus documentation functionality
 
 **Scale/Scope**:
 - Expected users: 100-1000 concurrent sessions
-- Database: <1GB storage (free tier limit)
-- Session duration: 7 days
-- Background profile: 3 fields per user
+- Database: <1GB storage (free tier limit, shared by both services)
+- Access token duration: 15 minutes (auto-renewed via refresh token)
+- Refresh token duration: 7 days (weekly re-authentication required)
+- Background profile: 3 fields per user (stored in JSONB metadata + JWT custom claims)
 
 ## Constitution Check
 
@@ -66,11 +83,11 @@ Implement user authentication for the RAG chatbot using FastAPI-Users library, w
 
 ### ✅ II. Engineering Accuracy
 **Status**: PASS
-**Assessment**: FastAPI-Users is industry-standard Python authentication library. Neon PostgreSQL is production-grade database. FastAPI + Docusaurus are well-validated frameworks.
+**Assessment**: Better Auth is production-grade authentication library with Node.js runtime. PyJWT is industry-standard for JWT validation in Python. Neon PostgreSQL is production-grade database. FastAPI + Docusaurus are well-validated frameworks. Microservices pattern is well-established architectural approach.
 
 ### ✅ III. Practical Applicability (NON-NEGOTIABLE)
 **Status**: PASS
-**Assessment**: Fully executable - FastAPI-Users provides runnable Python library, FastAPI backend is operational, Docusaurus frontend is functional. All dependencies specified with versions.
+**Assessment**: Fully executable - Better Auth provides runnable Node.js service, FastAPI backend operational with PyJWT validation, Docusaurus frontend functional with Better Auth client SDK. All dependencies specified with versions. Render supports multiple service deployments.
 
 ### ✅ IV. Spec-Driven Development
 **Status**: PASS
@@ -78,7 +95,7 @@ Implement user authentication for the RAG chatbot using FastAPI-Users library, w
 
 ### ✅ V. Ethical Responsibility
 **Status**: PASS
-**Assessment**: Password security via FastAPI-Users Argon2 hashing, JWT session security, no exposure of sensitive data in logs. SQL injection/XSS prevention via parameterized queries.
+**Assessment**: Password security via Better Auth Argon2 hashing, JWT session security with RS256 asymmetric signing and token rotation, no exposure of sensitive data in logs. SQL injection/XSS prevention via parameterized queries. CORS properly configured to prevent CSRF attacks.
 
 ### ✅ VI. Reproducibility & Open Knowledge
 **Status**: PASS
@@ -116,31 +133,43 @@ specs/authentication/static/diagrams/  # Architecture diagrams
 ### Source Code (repository root)
 
 ```text
-backend/
+better-auth-service/             # NEW - Better Auth microservice (Node.js)
 ├── src/
-│   ├── auth/                    # NEW - FastAPI-Users integration
+│   ├── auth.ts                 # Better Auth configuration
+│   ├── server.ts               # Express server for Better Auth
+│   ├── plugins/
+│   │   └── custom-claims.ts    # Plugin to add user background to JWT custom claims
+│   └── database.ts             # Kysely PostgreSQL adapter configuration
+├── tests/
+│   ├── signup.test.ts
+│   ├── signin.test.ts
+│   └── tokens.test.ts
+├── .env                        # DATABASE_URL, BETTER_AUTH_SECRET
+├── package.json                # Better Auth, Kysely, Express dependencies
+└── tsconfig.json               # TypeScript configuration
+
+backend/                        # FastAPI RAG service
+├── src/
+│   ├── auth/                    # NEW - JWT validation layer
 │   │   ├── __init__.py
-│   │   ├── config.py           # FastAPI-Users configuration
-│   │   ├── models.py           # User model with metadata JSONB field
-│   │   ├── schemas.py          # Pydantic schemas for API requests/responses
-│   │   ├── routes.py           # Auth API endpoints (/signup, /signin, /signout)
-│   │   ├── middleware.py       # JWT validation middleware
-│   │   └── personalization.py  # Background-to-prompt mapping logic
+│   │   ├── jwt_validator.py    # PyJWT validation against Better Auth JWKS
+│   │   ├── middleware.py       # JWT validation middleware for FastAPI
+│   │   └── claims_extractor.py # Extract user background from JWT custom claims
 │   ├── chat/                    # MODIFIED - Add personalization layer
 │   │   ├── __init__.py
-│   │   ├── routes.py           # MODIFIED - Add auth check + background fetch
-│   │   └── agent.py            # MODIFIED - Add dynamic prompt adjustment
-│   └── database.py              # MODIFIED - Add FastAPI-Users database setup
+│   │   ├── routes.py           # MODIFIED - Add auth check + JWT claims extraction
+│   │   ├── agent.py            # MODIFIED - Add dynamic prompt adjustment
+│   │   └── personalization.py  # Background-to-prompt mapping logic
+│   └── config.py               # MODIFIED - Add BETTER_AUTH_JWKS_URL configuration
 ├── tests/
 │   ├── auth/
-│   │   ├── test_signup.py
-│   │   ├── test_signin.py
-│   │   ├── test_session.py
+│   │   ├── test_jwt_validation.py
+│   │   ├── test_claims_extraction.py
 │   │   └── test_personalization.py
 │   └── integration/
 │       └── test_auth_chat_flow.py
-├── .env                         # DATABASE_URL configuration
-└── requirements.txt             # MODIFIED - Add FastAPI-Users, asyncpg, SQLAlchemy
+├── .env                        # DATABASE_URL, BETTER_AUTH_JWKS_URL
+└── requirements.txt            # MODIFIED - Add PyJWT[crypto], httpx
 
 frontend/                        # Docusaurus site (physical-robotics-ai-book/)
 ├── src/
@@ -167,7 +196,7 @@ frontend/                        # Docusaurus site (physical-robotics-ai-book/)
 └── package.json                 # No additional deps needed (React already included)
 ```
 
-**Structure Decision**: Web application architecture (backend + frontend). Backend handles authentication logic and RAG agent personalization. Frontend provides auth UI integrated into existing Docusaurus chat widget. Minimal changes to existing codebase - authentication is additive layer.
+**Structure Decision**: Microservices architecture (Better Auth service + FastAPI service + frontend). Better Auth service handles all authentication logic. FastAPI service validates JWT tokens and handles RAG agent personalization. Frontend provides auth UI integrated into existing Docusaurus navbar and chat widget. Minimal changes to existing codebase - authentication is additive layer with two backend services.
 
 ## Complexity Tracking
 
@@ -180,43 +209,50 @@ No constitution violations. This section intentionally left empty.
 ```mermaid
 graph TB
     subgraph "Frontend - Docusaurus + React"
+        Navbar[Navbar Sign In/Up Buttons]
         ChatWidget[Chat Widget]
-        SignupForm[Signup Form]
-        SigninForm[Signin Form]
-        AuthContext[Auth Context Provider]
+        SignupForm[Signup Modal]
+        SigninForm[Signin Modal]
+        AuthContext[Auth Context Provider<br/>Better Auth Client SDK]
     end
 
-    subgraph "Backend - FastAPI"
-        AuthAPI[Auth API /auth/*]
+    subgraph "Better Auth Service - Node.js<br/>(auth.yourdomain.com)"
+        BetterAuthAPI[Better Auth API<br/>/api/auth/*]
+        CustomClaimsPlugin[Custom Claims Plugin<br/>Adds background to JWT]
+        KyselyAdapter[Kysely PostgreSQL Adapter]
+    end
+
+    subgraph "FastAPI Service - Python<br/>(api.yourdomain.com)"
         ChatAPI[Chat API /chat/*]
-        SessionMiddleware[Session Middleware]
-        PersonalizationLayer[Personalization Layer]
+        JWTMiddleware[JWT Validation Middleware<br/>PyJWT + JWKS]
+        ClaimsExtractor[Claims Extractor<br/>Extract background from JWT]
+        PersonalizationLayer[Personalization Layer<br/>Map background to prompt]
         DocsAgent[RAG Agent docs_agent]
     end
 
     subgraph "Data Layer"
-        NeonDB[(Neon PostgreSQL)]
-        FastAPIUsers[FastAPI-Users Library]
+        NeonDB[(Neon PostgreSQL<br/>Shared Database)]
     end
 
-    ChatWidget -->|Click Sign In/Up from AuthPrompt| SignupForm/SigninForm
-    SignupForm -->|POST /auth/signup| AuthAPI
-    SigninForm -->|POST /auth/signin| AuthAPI
-    AuthContext -->|Manage State| ChatWidget
+    Navbar -->|Click Sign In/Up| SignupForm/SigninForm
+    SignupForm -->|POST /api/auth/signup<br/>+ background| BetterAuthAPI
+    SigninForm -->|POST /api/auth/signin| BetterAuthAPI
 
-    Navbar -->|Click Sign In/Up buttons| SignupForm/SigninForm
-    Navbar -->|After auth| Display user email + Sign Out
+    BetterAuthAPI -->|Create user| KyselyAdapter
+    KyselyAdapter -->|Store users + metadata| NeonDB
+    BetterAuthAPI -->|Issue JWT| CustomClaimsPlugin
+    CustomClaimsPlugin -->|Add background claims| BetterAuthAPI
+    BetterAuthAPI -->|Return JWT| AuthContext
+    AuthContext -->|Store token| Navbar/ChatWidget
 
-    ChatWidget -->|POST /chat/message + JWT token| SessionMiddleware
-    SessionMiddleware -->|Validate JWT| FastAPIUsers
-    FastAPIUsers -->|Query users| NeonDB
-    SessionMiddleware -->|Fetch background| PersonalizationLayer
+    ChatWidget -->|POST /chat/message<br/>Authorization: Bearer JWT| ChatAPI
+    ChatAPI -->|Validate token| JWTMiddleware
+    JWTMiddleware -->|Fetch JWKS public keys| BetterAuthAPI
+    JWTMiddleware -->|Extract claims| ClaimsExtractor
+    ClaimsExtractor -->|Get background| PersonalizationLayer
     PersonalizationLayer -->|Adjust system prompt| DocsAgent
     DocsAgent -->|Personalized response| ChatAPI
     ChatAPI -->|Response JSON| ChatWidget
-
-    AuthAPI -->|Create user + JWT| FastAPIUsers
-    FastAPIUsers -->|Store profiles| NeonDB
 ```
 
 ### Authentication Flow
@@ -224,35 +260,41 @@ graph TB
 ```mermaid
 sequenceDiagram
     actor User
-    participant Frontend as Chat Widget
-    participant AuthAPI as Auth API
-    participant FastAPIUsers as FastAPI-Users
+    participant Navbar as Navbar
+    participant Frontend as Signup/Signin Modal
+    participant BetterAuth as Better Auth API
+    participant CustomClaims as Custom Claims Plugin
     participant NeonDB as Neon PostgreSQL
 
     Note over User,NeonDB: Signup Flow
-    User->>Frontend: Click "Sign Up"
-    Frontend->>User: Show signup form
+    User->>Navbar: Click "Sign Up" button
+    Navbar->>Frontend: Show signup modal
     User->>Frontend: Fill email, password, background questions
     Frontend->>Frontend: Client-side validation
-    Frontend->>AuthAPI: POST /auth/signup {email, password, background}
-    AuthAPI->>AuthAPI: Server-side validation
-    AuthAPI->>FastAPIUsers: Create user + profile
-    FastAPIUsers->>NeonDB: INSERT user with metadata (background)
-    FastAPIUsers->>AuthAPI: User created + JWT token
-    AuthAPI->>Frontend: {token, user_id, background}
-    Frontend->>Frontend: Store token, update auth state
-    Frontend->>User: Auto-signin → chat widget active
+    Frontend->>BetterAuth: POST /api/auth/signup<br/>{email, password, metadata: {background}}
+    BetterAuth->>BetterAuth: Server-side validation (Argon2 hashing)
+    BetterAuth->>NeonDB: INSERT user with metadata JSONB
+    NeonDB->>BetterAuth: User created
+    BetterAuth->>CustomClaims: Generate JWT + add background to custom claims
+    CustomClaims->>BetterAuth: Access token (15min) + refresh token (7 days)
+    BetterAuth->>Frontend: {accessToken, refreshToken, user}
+    Frontend->>Frontend: Store tokens, update auth state
+    Frontend->>Navbar: Display user email + Sign Out
+    Frontend->>User: Chat widget active
 
     Note over User,NeonDB: Signin Flow
-    User->>Frontend: Click "Sign In"
-    Frontend->>User: Show signin form
+    User->>Navbar: Click "Sign In" button
+    Navbar->>Frontend: Show signin modal
     User->>Frontend: Enter email + password
-    Frontend->>AuthAPI: POST /auth/signin {email, password}
-    AuthAPI->>FastAPIUsers: Authenticate user
-    FastAPIUsers->>NeonDB: SELECT user WHERE email=...
-    FastAPIUsers->>AuthAPI: JWT token (7-day expiration)
-    AuthAPI->>Frontend: {token, user_id}
-    Frontend->>Frontend: Store token, update auth state
+    Frontend->>BetterAuth: POST /api/auth/signin<br/>{email, password}
+    BetterAuth->>NeonDB: SELECT user WHERE email=...
+    NeonDB->>BetterAuth: User record + metadata
+    BetterAuth->>BetterAuth: Verify password (Argon2)
+    BetterAuth->>CustomClaims: Generate JWT + add background to custom claims
+    CustomClaims->>BetterAuth: Access token (15min) + refresh token (7 days)
+    BetterAuth->>Frontend: {accessToken, refreshToken, user}
+    Frontend->>Frontend: Store tokens, update auth state
+    Frontend->>Navbar: Display user email + Sign Out
     Frontend->>User: Chat widget active
 ```
 
@@ -261,24 +303,29 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Guest: User visits site
-    Guest --> Authenticated: Signup/Signin
-    Authenticated --> Authenticated: Chat requests (session valid)
-    Authenticated --> SessionExpired: 7 days elapsed
-    SessionExpired --> Authenticated: Re-authenticate
-    Authenticated --> Guest: Signout
-    SessionExpired --> Guest: Signout
+    Guest --> Authenticated: Signup/Signin (access + refresh tokens)
+    Authenticated --> Authenticated: Chat requests (access token valid)
+    Authenticated --> AccessTokenExpired: 15 minutes elapsed
+    AccessTokenExpired --> Authenticated: Auto-renew with refresh token
+    Authenticated --> RefreshTokenExpired: 7 days elapsed (refresh token expired)
+    RefreshTokenExpired --> Authenticated: Re-authenticate
+    Authenticated --> Guest: Signout (invalidate refresh token)
+    RefreshTokenExpired --> Guest: Signout
 
     state Authenticated {
         [*] --> Active
         Active --> TypingMessage: User types chat message
-        TypingMessage --> ValidatingSession: User sends message
-        ValidatingSession --> FetchingBackground: Session valid
-        FetchingBackground --> PersonalizingPrompt: Background retrieved
+        TypingMessage --> ValidatingToken: User sends message
+        ValidatingToken --> CheckingExpiry: Validate JWT signature
+        CheckingExpiry --> RenewingToken: Access token expired (< 7 days)
+        RenewingToken --> ExtractingClaims: Renewed with refresh token
+        CheckingExpiry --> ExtractingClaims: Access token valid
+        ExtractingClaims --> PersonalizingPrompt: Background from JWT claims
         PersonalizingPrompt --> GeneratingResponse: Prompt adjusted
         GeneratingResponse --> Active: Response displayed
-        ValidatingSession --> SessionExpiredPrompt: Session invalid
-        SessionExpiredPrompt --> PreservingMessage: User re-authenticates
-        PreservingMessage --> FetchingBackground: Message preserved
+        ValidatingToken --> RefreshExpiredPrompt: Refresh token expired
+        RefreshExpiredPrompt --> PreservingMessage: User re-authenticates
+        PreservingMessage --> ExtractingClaims: Message preserved
     }
 ```
 
@@ -288,18 +335,23 @@ stateDiagram-v2
 sequenceDiagram
     participant User
     participant Frontend as Chat Widget
-    participant ChatAPI as Chat API
-    participant SessionMW as Session Middleware
+    participant ChatAPI as FastAPI Chat API
+    participant JWTMiddleware as JWT Middleware
+    participant BetterAuthJWKS as Better Auth JWKS Endpoint
+    participant ClaimsExtractor as Claims Extractor
     participant PersonalizationLayer as Personalization Layer
     participant DocsAgent as RAG Agent
 
     User->>Frontend: Type message "What is ROS 2?"
-    Frontend->>ChatAPI: POST /chat/message {message, session_token}
-    ChatAPI->>SessionMW: Validate session
-    SessionMW->>SessionMW: Check Better Auth session
-    alt Session valid
-        SessionMW->>PersonalizationLayer: Fetch user background
-        PersonalizationLayer->>PersonalizationLayer: Query background_profile
+    Frontend->>ChatAPI: POST /chat/message<br/>{message}<br/>Authorization: Bearer {accessToken}
+    ChatAPI->>JWTMiddleware: Validate JWT
+    JWTMiddleware->>BetterAuthJWKS: Fetch JWKS public keys (if not cached)
+    BetterAuthJWKS->>JWTMiddleware: RS256 public keys
+    JWTMiddleware->>JWTMiddleware: Verify JWT signature + expiration
+    alt Access token valid
+        JWTMiddleware->>ClaimsExtractor: Extract custom claims
+        ClaimsExtractor->>ClaimsExtractor: Parse custom claims namespace<br/>(programming_experience, ros2_familiarity, hardware_access)
+        ClaimsExtractor->>PersonalizationLayer: User background from JWT
         PersonalizationLayer->>PersonalizationLayer: Map to expertise level
 
         alt Beginner (0-2 years, ROS2=None)
@@ -314,9 +366,14 @@ sequenceDiagram
         DocsAgent->>ChatAPI: Response text
         ChatAPI->>Frontend: {response, personalized: true}
         Frontend->>User: Display personalized response
-    else Session expired
-        SessionMW->>Frontend: {error: "Session expired", preserve_message: true}
-        Frontend->>User: Show re-auth prompt, preserve typed message
+    else Access token expired but refresh valid
+        JWTMiddleware->>Frontend: {error: "Token expired - renewing"}
+        Frontend->>BetterAuthJWKS: POST /api/auth/refresh {refreshToken}
+        BetterAuthJWKS->>Frontend: New access token
+        Frontend->>ChatAPI: Retry with new access token
+    else Refresh token expired
+        JWTMiddleware->>Frontend: {error: "Refresh expired", preserve_message: true}
+        Frontend->>User: Show re-auth modal, preserve typed message
     end
 ```
 
@@ -324,40 +381,47 @@ sequenceDiagram
 
 ### Research Tasks
 
-1. **FastAPI-Users Integration with FastAPI**
-   - Research Question: How to configure FastAPI-Users for async FastAPI backend with Neon PostgreSQL?
-   - Method: Review FastAPI-Users official docs, async SQLAlchemy adapter patterns
-   - Output: Configuration pattern for FastAPI-Users with async SQLAlchemy + Neon PostgreSQL
+1. **Better Auth Setup with Neon PostgreSQL**
+   - Research Question: How to configure Better Auth with Kysely adapter for Neon PostgreSQL?
+   - Method: Review Better Auth MCP server docs, Kysely PostgreSQL adapter configuration
+   - Output: Better Auth configuration pattern with Kysely + Neon PostgreSQL connection string
 
-2. **FastAPI-Users Custom User Metadata**
-   - Research Question: How to store custom fields (background profile) in FastAPI-Users user model?
-   - Method: Review FastAPI-Users user schema customization docs for metadata field
-   - Output: JSONB metadata field pattern for `programming_experience`, `ros2_familiarity`, `hardware_access`
+2. **Better Auth Custom Claims Plugin**
+   - Research Question: How to add user background fields to JWT custom claims in Better Auth?
+   - Method: Review Better Auth plugin system, custom claims examples via Better Auth MCP
+   - Output: Custom claims plugin implementation for `programming_experience`, `ros2_familiarity`, `hardware_access`
 
-3. **React Authentication State Management**
-   - Research Question: How to manage authentication state in React + Docusaurus?
-   - Method: Review React Context API patterns, JWT token storage best practices
-   - Output: React hooks pattern for auth state management with localStorage
+3. **FastAPI JWT Validation with PyJWT**
+   - Research Question: How to validate Better Auth RS256 JWT tokens in FastAPI using JWKS endpoint?
+   - Method: Review PyJWT[crypto] documentation, JWKS fetching patterns, RS256 asymmetric validation
+   - Output: JWT middleware implementation for FastAPI that validates tokens against Better Auth JWKS
 
-4. **Neon PostgreSQL Connection Pooling**
-   - Research Question: How to implement connection pooling for Neon PostgreSQL in FastAPI?
-   - Method: Review asyncpg pooling patterns, Neon free tier limits
-   - Output: Connection pool configuration for optimal performance within free tier
+4. **React Better Auth Client SDK Integration**
+   - Research Question: How to integrate Better Auth client SDK in React + Docusaurus?
+   - Method: Review Better Auth client SDK docs, React hooks patterns, token storage strategies
+   - Output: React hooks pattern for auth state management with Better Auth SDK + localStorage/cookies
 
-5. **Session Expiration Handling in React**
-   - Research Question: How to detect session expiration and preserve user state?
-   - Method: Review interceptor patterns for API calls, React state preservation
-   - Output: Axios/Fetch interceptor pattern for session expiration
+5. **Token Refresh Strategy in React**
+   - Research Question: How to implement automatic access token renewal using refresh tokens?
+   - Method: Review interceptor patterns for API calls, token refresh before expiration
+   - Output: Axios/Fetch interceptor pattern for automatic token renewal (15min access, 7-day refresh)
+
+6. **Microservices CORS Configuration**
+   - Research Question: How to configure CORS for cross-origin communication between Better Auth and FastAPI services?
+   - Method: Review CORS patterns for microservices, Render deployment CORS configuration
+   - Output: CORS configuration for both services allowing production domain + subdomains
 
 ### Research Output: research.md
 
 Will document:
-- FastAPI-Users configuration for async FastAPI + Neon PostgreSQL
-- Custom user metadata JSONB field pattern
-- React auth state management pattern with Context API
-- Connection pooling best practices for asyncpg
-- JWT token expiration handling pattern
-- Alternatives considered (including Better Auth) and why FastAPI-Users was chosen
+- Better Auth configuration with Kysely + Neon PostgreSQL
+- Custom claims plugin implementation for user background fields
+- FastAPI PyJWT validation against Better Auth JWKS endpoint (RS256)
+- React Better Auth client SDK integration pattern
+- Token refresh strategy (15min access + 7-day refresh with auto-renewal)
+- CORS configuration for microservices architecture
+- Deployment strategy on Render (two separate services sharing Neon database)
+- Why Better Auth microservice architecture was chosen over monolithic FastAPI-Users
 
 ## Phase 1: Design & Contracts
 
@@ -365,119 +429,188 @@ Will document:
 
 **Entities:**
 
-1. **User** (managed by FastAPI-Users)
-   - `id` (UUID, PK)
+1. **User** (managed by Better Auth in Neon PostgreSQL)
+   - `id` (string, PK, Better Auth user ID)
    - `email` (string, unique, indexed)
-   - `hashed_password` (string, Argon2)
-   - `is_active` (boolean, default: true)
-   - `is_superuser` (boolean, default: false)
-   - `is_verified` (boolean, default: false)
-   - `metadata` (JSONB, stores BackgroundProfile)
-   - `created_at` (timestamp)
-   - `updated_at` (timestamp)
+   - `emailVerified` (boolean, default: false)
+   - `name` (string, optional)
+   - `image` (string, optional, profile picture URL)
+   - `createdAt` (timestamp)
+   - `updatedAt` (timestamp)
+   - `metadata` (JSONB, stores BackgroundProfile - custom field added via Better Auth schema extension)
 
-2. **BackgroundProfile** (stored in User.metadata JSONB field)
+2. **Account** (managed by Better Auth - for password storage)
+   - `id` (string, PK)
+   - `userId` (string, FK to User)
+   - `accountId` (string, provider account ID)
+   - `providerId` (string, e.g., "credential" for email/password)
+   - `password` (string, Argon2 hashed - only for credential provider)
+   - `accessToken` (string, optional)
+   - `refreshToken` (string, optional)
+   - `expiresAt` (timestamp, optional)
+
+3. **Session** (managed by Better Auth - for refresh tokens)
+   - `id` (string, PK)
+   - `userId` (string, FK to User)
+   - `expiresAt` (timestamp)
+   - `token` (string, refresh token - rotated on use)
+   - `ipAddress` (string, optional)
+   - `userAgent` (string, optional)
+
+4. **BackgroundProfile** (stored in User.metadata JSONB field)
    - `programming_experience` (string enum: "0-2 years", "3-5 years", "6-10 years", "10+ years")
    - `ros2_familiarity` (string enum: "None", "Beginner", "Intermediate", "Advanced")
    - `hardware_access` (string enum: "None", "Simulation only", "Physical robots/sensors")
 
-3. **JWT Token** (stateless, not stored in database)
-   - Encoded user_id, email, expiration
+5. **JWT Access Token** (stateless, not stored in database)
+   - Standard claims: `sub` (user_id), `email`, `exp` (15 minutes), `iat`
+   - Custom claims namespace: `https://yourdomain.com/claims`
+     - `programming_experience`, `ros2_familiarity`, `hardware_access`
+   - Signed with RS256 (private key managed by Better Auth)
+   - Validated by FastAPI using JWKS public keys
+
+6. **Refresh Token** (stored in Session table)
    - 7-day expiration
-   - Signed with SECRET_KEY
+   - Rotated on each use (old token invalidated, new token issued)
+   - Invalidated on signout
 
 **Relationships:**
-- User 1:1 BackgroundProfile (embedded in metadata field)
-- JWT tokens are stateless (no database relationship)
+- User 1:N Account (supports multiple auth providers, we use "credential")
+- User 1:N Session (multiple active sessions across devices)
+- User 1:1 BackgroundProfile (embedded in metadata JSONB field)
+- Access tokens are stateless (validated via JWKS, no database storage)
+- Refresh tokens stored in Session table
 
 **Validation Rules:**
-- Email: RFC 5322 format validation (client + server)
-- Password: FastAPI-Users default validation (minimum 8 characters + Argon2 hashing)
+- Email: RFC 5322 format validation (client + Better Auth server-side)
+- Password: Better Auth default validation (minimum 8 characters + Argon2 hashing)
 - Background fields: Dropdown-only values (prevents malformed input)
+- JWT signature: RS256 asymmetric validation via JWKS
 
 ### API Contracts (contracts/)
 
-#### auth-api.yaml (OpenAPI 3.0)
+#### better-auth-api.yaml (OpenAPI 3.0)
+
+Better Auth service hosted at `auth.yourdomain.com`:
 
 ```yaml
-POST /auth/signup
+POST /api/auth/sign-up/email
 Request:
   email: string (required, format: email)
-  password: string (required, Better Auth validation)
-  background:
-    programming_experience: enum (required)
-    ros2_familiarity: enum (required)
-    hardware_access: enum (required)
-Response 201:
-  token: string (session token)
-  user_id: string (UUID)
-  background: object (echoed back)
+  password: string (required, Better Auth Argon2 validation)
+  name: string (optional)
+  metadata:
+    programming_experience: enum (required: "0-2 years" | "3-5 years" | "6-10 years" | "10+ years")
+    ros2_familiarity: enum (required: "None" | "Beginner" | "Intermediate" | "Advanced")
+    hardware_access: enum (required: "None" | "Simulation only" | "Physical robots/sensors")
+Response 200:
+  user: {id, email, name, metadata}
+  session: {token (refresh token), expiresAt}
+  accessToken: string (JWT, 15min expiration, includes custom claims)
+  refreshToken: string (7 days)
 Response 400:
-  error: "Email already registered. Try signing in instead."
-  error: "Invalid email format"
-  error: "Password does not meet requirements"
+  error: {message: "Email already registered"}
+  error: {message: "Invalid email format"}
+  error: {message: "Password does not meet requirements"}
 Response 500:
-  error: "Connection failed. Please check your internet and try again."
+  error: {message: "Internal server error"}
 
-POST /auth/signin
+POST /api/auth/sign-in/email
 Request:
   email: string (required)
   password: string (required)
 Response 200:
-  token: string
-  user_id: string
+  user: {id, email, name, metadata}
+  session: {token, expiresAt}
+  accessToken: string (JWT, 15min, includes custom claims from metadata)
+  refreshToken: string (7 days)
 Response 401:
-  error: "Invalid email or password"
+  error: {message: "Invalid credentials"}
 Response 500:
-  error: "Connection failed. Please check your internet and try again."
+  error: {message: "Internal server error"}
 
-POST /auth/signout
+POST /api/auth/sign-out
 Headers:
-  Authorization: Bearer {token}
+  Authorization: Bearer {accessToken}
+Request:
+  refreshToken: string (to invalidate)
 Response 200:
-  message: "Signed out successfully"
+  success: true
 Response 401:
-  error: "Unauthorized"
+  error: {message: "Unauthorized"}
+
+POST /api/auth/refresh
+Request:
+  refreshToken: string (current refresh token)
+Response 200:
+  accessToken: string (new JWT, 15min)
+  refreshToken: string (new rotated refresh token, 7 days)
+Response 401:
+  error: {message: "Invalid or expired refresh token"}
+
+GET /.well-known/jwks.json
+Response 200:
+  keys: [{kid, kty, alg: "RS256", use: "sig", n, e}]
+  # Public keys for JWT signature verification by FastAPI
 ```
 
-#### personalization-api.yaml
+#### fastapi-chat-api.yaml
+
+FastAPI service hosted at `api.yourdomain.com`:
 
 ```yaml
-GET /auth/background/{user_id}
+POST /chat/message
 Headers:
-  Authorization: Bearer {token}
-Response 200:
-  programming_experience: enum
-  ros2_familiarity: enum
-  hardware_access: enum
-Response 401:
-  error: "Unauthorized"
-
-POST /chat/message (MODIFIED)
-Headers:
-  Authorization: Bearer {token}
+  Authorization: Bearer {accessToken (JWT from Better Auth)}
 Request:
   message: string
 Response 200:
-  response: string (personalized)
+  response: string (personalized based on JWT claims)
   personalized: boolean (true)
   expertise_level: string (beginner|intermediate|advanced)
+  user_background: {programming_experience, ros2_familiarity, hardware_access}
 Response 401:
-  error: "Session expired"
-  preserve_message: true
+  error: {message: "Invalid or expired access token"}
+  action: "refresh" (client should use refresh token)
 Response 403:
-  error: "Please sign in to use the chat"
+  error: {message: "Please sign in to use the chat"}
+Response 500:
+  error: {message: "Internal server error"}
+
+# Internal endpoint for health check
+GET /health
+Response 200:
+  status: "healthy"
+  better_auth_jwks_reachable: boolean
+
+# No background endpoint needed - extracted directly from JWT claims
 ```
 
 ### Quickstart (quickstart.md)
 
 Will include:
-- Prerequisites (Python 3.10+, Node 18+, Neon PostgreSQL database)
-- Backend setup (install FastAPI-Users, configure DATABASE_URL, run migrations)
-- Frontend setup (configure React auth context with localStorage)
-- Development workflow (run backend server, run Docusaurus dev server)
-- Testing setup (pytest for backend, Jest for frontend)
-- Deployment to Render free tier (environment variables, build commands)
+- Prerequisites (Python 3.10+, Node.js 18+ LTS, Neon PostgreSQL database)
+- **Better Auth Service Setup**:
+  - Install Better Auth, Kysely, Express dependencies (npm install)
+  - Configure DATABASE_URL environment variable
+  - Implement custom claims plugin for user background fields
+  - Run Better Auth server (development: localhost:3000, production: auth.yourdomain.com)
+- **FastAPI Service Setup**:
+  - Install PyJWT[crypto], httpx dependencies (uv add)
+  - Configure BETTER_AUTH_JWKS_URL environment variable
+  - Implement JWT validation middleware
+  - Run FastAPI server (development: localhost:8000, production: api.yourdomain.com)
+- **Frontend Setup**:
+  - Install Better Auth client SDK (npm install @better-auth/react)
+  - Configure AuthProvider with Better Auth endpoints
+  - Update Navbar Sign In/Sign Up button handlers
+- Development workflow (run 3 services: Better Auth, FastAPI, Docusaurus)
+- Testing setup (Jest for Better Auth + React, pytest for FastAPI)
+- Deployment to Render free tier:
+  - Deploy Better Auth as Node.js web service
+  - Deploy FastAPI as Python web service
+  - Configure CORS for cross-service communication
+  - Set environment variables (DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_JWKS_URL)
 
 ## Phase 2: Task Generation
 
@@ -517,23 +650,26 @@ Plan will inform task generation by providing:
 - Add retry logic (1 retry) before falling back to default
 - Display subtle indicator in UI: "Using default personalization" (not blocking, informational only)
 
-### Risk 4: Better Auth API Rate Limiting
-**Impact**: Signup/signin requests rejected during traffic spikes
-**Probability**: Low (free tier should support 1000 concurrent users)
+### Risk 4: Better Auth Service Downtime
+**Impact**: Users cannot signup/signin when Better Auth service is unavailable
+**Probability**: Medium (separate service adds potential failure point)
 **Mitigation**:
-- Implement client-side request throttling (max 1 auth request per 2 seconds per user)
-- Add loading states to prevent duplicate form submissions
-- Monitor auth request metrics to detect approaching limits
-- Upgrade to paid tier if traffic exceeds free tier capacity (fallback plan)
+- Implement frontend retry logic with exponential backoff (max 3 attempts)
+- Display user-friendly error banner: "Authentication service temporarily unavailable. Please try again."
+- Auto-retry connection every 30 seconds until service recovers (per FR-018b)
+- Monitor Better Auth service health via /health endpoint
+- Set up alerts for Better Auth service downtime
+- Document manual recovery steps for Render service restart
 
 ### Risk 5: Chat Widget Performance Degradation
-**Impact**: Slow personalization layer adds latency to chat responses
-**Probability**: Medium (additional database query + prompt adjustment)
+**Impact**: JWT validation and claims extraction add latency to chat responses
+**Probability**: Low (JWT validation is CPU-bound and fast, background already in token)
 **Mitigation**:
-- Implement background profile caching (in-memory cache, TTL: 5 minutes, invalidate on profile update)
-- Optimize database queries (add indexes on user_id for background_profile table)
-- Parallel execution: Fetch background + generate base response concurrently, merge at end
-- Monitor p95 latency: Alert if >500ms overhead (per SC-004: total response <5s)
+- Cache JWKS public keys (TTL: 1 hour, refresh if key ID not found)
+- JWT validation is local operation (no network call after JWKS cached)
+- Background extraction from JWT claims is immediate (no database query needed)
+- Monitor p95 latency: Alert if JWT validation >100ms overhead (per SC-004: total response <5s)
+- PyJWT is highly optimized for RS256 validation
 
 ## Success Metrics & Validation
 
@@ -552,72 +688,99 @@ Plan will inform task generation by providing:
 - [ ] Beginner vs Advanced users receive observably different responses for same question (manual QA test)
 
 ### Security Validation
-- [ ] Passwords hashed with bcrypt/Argon2 (unit test: verify hash format)
-- [ ] Session tokens cryptographically secure (unit test: verify randomness)
-- [ ] SQL injection prevented (penetration test with sqlmap)
+- [ ] Passwords hashed with Argon2 (unit test: verify hash format in Better Auth Account table)
+- [ ] JWT tokens use RS256 asymmetric signing (unit test: verify algorithm in token header)
+- [ ] Refresh tokens rotated on each use (integration test: verify old token invalidated)
+- [ ] JWKS endpoint returns valid RS256 public keys (integration test)
+- [ ] FastAPI validates JWT signatures against Better Auth JWKS (integration test)
+- [ ] CORS configured correctly (production domain + subdomains only, no wildcard)
+- [ ] SQL injection prevented (penetration test with sqlmap on both services)
 - [ ] XSS prevented (penetration test with XSS payloads)
-- [ ] Duplicate email registration blocked (integration test)
+- [ ] Duplicate email registration blocked (integration test via Better Auth)
 
 ### Reliability Validation
-- [ ] Concurrent signups do not cause race conditions (load test: 100 concurrent requests)
-- [ ] Sessions persist across server restarts (integration test: restart server mid-session)
-- [ ] Failed auth attempts return user-friendly errors (E2E test: test all error scenarios)
-- [ ] Neon database unavailability handled gracefully (integration test: mock database failure)
+- [ ] Concurrent signups do not cause race conditions (load test: 100 concurrent requests to Better Auth)
+- [ ] JWT access tokens remain valid across FastAPI server restarts (integration test: stateless validation)
+- [ ] Refresh tokens persist across Better Auth server restarts (integration test: verify Session table)
+- [ ] Failed auth attempts return user-friendly errors (E2E test: test all error scenarios on both services)
+- [ ] Neon database unavailability handled gracefully (integration test: mock database failure for both services)
+- [ ] Better Auth service unavailability shows error banner with auto-retry (E2E test: stop Better Auth service)
+- [ ] Token refresh works automatically before access token expires (integration test: wait 15+ minutes)
 
 ## Implementation Phases
 
-### Phase 0: Research & Setup (1-2 days)
-- Research FastAPI-Users integration patterns
+### Phase 0: Research & Setup (2-3 days)
+- Research Better Auth setup with Kysely + Neon PostgreSQL
+- Research Better Auth custom claims plugin patterns
+- Research PyJWT JWKS validation for FastAPI
+- Research Better Auth React client SDK integration
 - Set up Neon PostgreSQL database (if not already configured)
-- Configure FastAPI-Users in FastAPI backend with async SQLAlchemy
-- Configure React auth context with localStorage
 - Document findings in research.md
 
-### Phase 1: Backend Authentication (3-4 days)
-- Implement User model with metadata JSONB field
-- Implement FastAPI-Users configuration with Neon PostgreSQL
-- Implement /auth/signup endpoint with background questions
-- Implement /auth/signin endpoint
-- Implement /auth/signout endpoint
-- Implement JWT validation middleware for request validation
-- Write unit tests for all auth endpoints
-- Write integration tests for full auth flow
+### Phase 1: Better Auth Service (3-4 days)
+- Create better-auth-service/ directory structure
+- Initialize Node.js project (package.json, tsconfig.json)
+- Install Better Auth, Kysely, Express dependencies
+- Configure Kysely PostgreSQL adapter with Neon DATABASE_URL
+- Implement Better Auth configuration (auth.ts)
+- Implement custom claims plugin to add user background to JWT
+- Implement Express server (server.ts) with Better Auth routes
+- Configure CORS (allow production domain + subdomains)
+- Write Jest tests for signup, signin, token generation
+- Test JWKS endpoint (/.well-known/jwks.json)
+- Deploy to Render as Node.js web service
 
-### Phase 2: Frontend Authentication UI (2-3 days)
-- Create AuthContext and useAuth hook (EXISTING in auth branch)
-- Implement SignupForm modal component with background question dropdowns (EXISTING in auth branch)
-- Implement SigninForm modal component (EXISTING in auth branch)
-- Implement AuthPrompt for guest users in chat widget (EXISTING in auth branch)
-- **[NEW]** Integrate auth modals with Navbar Sign In/Sign Up buttons (replace dummy onClick in main branch Navbar)
-- **[NEW]** Ensure Navbar Content shows user email + Sign Out when authenticated (already in auth branch)
-- Add client-side validation (email format, required fields) (EXISTING in auth branch)
-- Add error message display (network failures, validation errors) (EXISTING in auth branch)
-- Write Jest tests for all auth components
+### Phase 2: FastAPI JWT Validation (2-3 days)
+- Create backend/src/auth/ directory structure
+- Install PyJWT[crypto], httpx dependencies
+- Implement JWKS fetching and caching (jwks_cache.py)
+- Implement JWT validation middleware (middleware.py)
+- Implement JWT claims extractor (claims_extractor.py)
+- Configure BETTER_AUTH_JWKS_URL environment variable
+- Configure CORS (allow production domain + subdomains)
+- Write pytest unit tests for JWT validation
+- Write pytest integration tests with mock Better Auth JWKS
+- Update /chat/message endpoint to use JWT middleware
 
-### Phase 3: Personalization Layer (2-3 days)
-- Implement personalization.py mapping logic (background → expertise level → prompt adjustments)
-- Modify /chat/message endpoint to fetch background + adjust RAG agent prompt
-- Implement background profile caching (in-memory, TTL: 5 minutes)
-- Add session expiration handling (preserve message, re-auth flow)
+### Phase 3: Frontend Better Auth Integration (2-3 days)
+- Install Better Auth React client SDK (@better-auth/react)
+- Update AuthContext to use Better Auth client SDK (MODIFY existing auth branch)
+- Update SignupForm to call Better Auth /api/auth/sign-up/email with metadata (MODIFY existing)
+- Update SigninForm to call Better Auth /api/auth/sign-in/email (MODIFY existing)
+- **[NEW]** Integrate auth modals with Navbar Sign In/Sign Up buttons (replace dummy onClick in main branch)
+- **[NEW]** Ensure Navbar Content shows user email + Sign Out when authenticated (merge from auth branch)
+- Implement automatic token refresh before 15-min expiration
+- Implement Better Auth service unavailability handling (error banner + 30s auto-retry)
+- Add client-side validation (EXISTING in auth branch)
+- Write Jest tests for Better Auth SDK integration
+
+### Phase 4: Personalization Layer (2-3 days)
+- Implement personalization.py mapping logic (background from JWT → expertise level → prompt adjustments)
+- Modify /chat/message endpoint to extract background from JWT claims
+- Add FastAPI dependency injection for JWT claims
+- Test personalization with different JWT claim values
 - Write unit tests for personalization mapping logic
-- Write integration tests for personalized chat flow
+- Write integration tests for personalized chat flow with JWT tokens
 
-### Phase 4: Testing & Deployment (2-3 days)
-- Run full test suite (unit, integration, E2E)
+### Phase 5: Testing & Deployment (3-4 days)
+- Run full test suite (unit, integration, E2E for both services)
 - Perform manual QA testing (beginner vs advanced personalization contrast)
-- Load testing (100 concurrent users, measure latency)
-- Security testing (SQL injection, XSS, session security)
-- Deploy to Render free tier staging environment
-- Verify Neon PostgreSQL connection pooling works on Render
-- Deploy to production
-- Monitor metrics (latency, error rates, user signups)
+- Test token refresh flow (wait 15+ minutes, verify auto-renewal)
+- Test Better Auth service downtime handling (stop service, verify error banner + retry)
+- Load testing (100 concurrent users across both services)
+- Security testing (SQL injection, XSS, JWKS validation, CORS, RS256 signature)
+- Deploy Better Auth to Render free tier (Node.js web service)
+- Deploy FastAPI to Render free tier (Python web service)
+- Configure environment variables (DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_JWKS_URL)
+- Verify CORS works for cross-service communication
+- Monitor metrics (latency, error rates, JWT validation overhead, user signups)
 
-**Total Estimated Duration**: 10-15 days (2-3 weeks)
+**Total Estimated Duration**: 14-20 days (3-4 weeks)
 
 ## Open Questions for Task Phase
 
 1. How to handle concurrent background profile updates (if added in future)?
-   - Recommendation: Use database-level locking or optimistic concurrency control
+   - Recommendation: Use Better Auth metadata update mechanism with database-level locking
 
 2. Should we add analytics tracking for personalization effectiveness?
    - Recommendation: Deferred to future iteration (explicitly out of scope per spec)
@@ -625,8 +788,14 @@ Plan will inform task generation by providing:
 3. Should we add visible indicator showing how background affects responses?
    - Recommendation: Deferred to future iteration (open question in spec)
 
-4. How to migrate existing in-memory sessions to Better Auth sessions?
-   - Recommendation: Clean cutover - invalidate all existing sessions, require re-authentication
+4. How to migrate existing in-memory sessions to Better Auth JWT sessions?
+   - Recommendation: Clean cutover - invalidate all existing sessions, require re-authentication via Better Auth
+
+5. Should Better Auth and FastAPI services share a single Render account or separate accounts?
+   - Recommendation: Use single Render account with two separate web services for easier management
+
+6. How to handle Better Auth database schema migrations?
+   - Recommendation: Better Auth handles schema automatically via Kysely migrations; document migration process in quickstart.md
 
 ## Next Steps
 
