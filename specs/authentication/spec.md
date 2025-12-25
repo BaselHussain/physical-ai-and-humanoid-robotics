@@ -2,9 +2,20 @@
 
 **Feature Branch**: `authentication`
 **Created**: 2025-12-15
-**Updated**: 2025-12-17
-**Status**: Draft
+**Updated**: 2025-12-25 (Integration with Redesigned Navbar)
+**Status**: In Progress - Integration Phase
 **Input**: User description: "RAG Chatbot Authentication - Implement Signup and Signin using FastAPI-Users (industry-standard Python authentication library). During signup, ask custom questions about user's software and hardware background (years of programming experience, ROS 2/robotics familiarity, hardware access). Store this in user profile metadata. Use this background to personalize RAG chatbot responses by dynamically adjusting the docs_agent system prompt. Must use Neon PostgreSQL (DATABASE_URL from .env), replace in-memory sessions with database-backed sessions, and be deployable on Render free tier."
+
+## Integration Context (2025-12-25)
+
+**Main Branch Changes**: The main branch now includes a redesigned site with a new header/navbar component that contains Sign In and Sign Up buttons. These buttons are currently dummy placeholders.
+
+**Integration Scope**:
+- **Auth Entry Point**: Navbar Sign In/Sign Up buttons (`physical-robotics-ai-book/src/theme/Navbar/index.tsx:30-43`)
+- **Implementation**: Replace dummy onClick handlers with auth modal triggers
+- **After Auth**: Navbar shows user email and Sign Out button (already implemented in authentication branch at `Navbar/Content/index.tsx`)
+- **Auth Forms**: Display as modals/overlays when navbar buttons are clicked
+- **Layout Integration**: AuthProvider already wraps app in `Layout/index.tsx` on authentication branch
 
 ## Architectural Decision Note
 
@@ -43,7 +54,7 @@ A new user visits the documentation site, wants to use the RAG chatbot, creates 
 
 **Acceptance Scenarios**:
 
-1. **Given** a guest user on the documentation site, **When** they click "Sign Up" on the chat widget, **Then** they see a registration form with email, password, and background questions
+1. **Given** a guest user on the documentation site, **When** they click "Sign Up" in the navbar header, **Then** they see a registration modal with email, password, and background questions
 2. **Given** a user on the signup form, **When** they fill in all required fields (email, password, years of programming experience, ROS 2 familiarity level, hardware access), **Then** their account is created and they are automatically signed in
 3. **Given** a newly registered beginner user (0-2 years experience, no ROS 2 knowledge), **When** they ask "What is ROS 2?", **Then** the chatbot response uses simple language, step-by-step explanations, and avoids jargon
 4. **Given** a newly registered expert user (5+ years experience, advanced ROS 2 knowledge), **When** they ask "What is ROS 2?", **Then** the chatbot response uses technical terminology, focuses on advanced concepts, and provides in-depth details
@@ -60,10 +71,10 @@ A registered user returns to the documentation site, signs in with their existin
 
 **Acceptance Scenarios**:
 
-1. **Given** an existing registered user, **When** they click "Sign In" on the chat widget, **Then** they see a login form with email and password fields
-2. **Given** a user on the signin form, **When** they enter correct credentials and submit, **Then** they are authenticated and the chat widget opens
+1. **Given** an existing registered user, **When** they click "Sign In" in the navbar header, **Then** they see a login modal with email and password fields
+2. **Given** a user on the signin modal, **When** they enter correct credentials and submit, **Then** they are authenticated, the modal closes, and the navbar displays their email with a Sign Out button
 3. **Given** an authenticated user with a saved background profile, **When** they ask any question to the RAG chatbot, **Then** the response is personalized based on their stored expertise level and hardware context
-4. **Given** an authenticated user, **When** they close and reopen the browser (session persistence), **Then** they remain signed in and chatbot personalization continues
+4. **Given** an authenticated user, **When** they close and reopen the browser (session persistence), **Then** they remain signed in (navbar shows email + Sign Out) and chatbot personalization continues
 
 ---
 
@@ -77,9 +88,10 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 **Acceptance Scenarios**:
 
-1. **Given** a guest user (not signed in), **When** they try to open the chat widget, **Then** they see a message "Please sign in to use the personalized chat" with Sign In and Sign Up buttons
-2. **Given** a guest user viewing the sign-in prompt, **When** they click "Sign Up", **Then** they are taken to the registration flow (User Story 1)
-3. **Given** a guest user viewing the sign-in prompt, **When** they click "Sign In", **Then** they are taken to the login flow (User Story 2)
+1. **Given** a guest user (not signed in), **When** they try to open the chat widget, **Then** they see a message "Please sign in to use the personalized chat" with Sign In and Sign Up buttons (which trigger the navbar auth modals)
+2. **Given** a guest user viewing the sign-in prompt in chat widget, **When** they click "Sign Up", **Then** the signup modal opens (User Story 1)
+3. **Given** a guest user viewing the sign-in prompt in chat widget, **When** they click "Sign In", **Then** the signin modal opens (User Story 2)
+4. **Given** a guest user on the site, **When** they click "Sign In" or "Sign Up" in the navbar, **Then** the corresponding auth modal opens
 
 ---
 

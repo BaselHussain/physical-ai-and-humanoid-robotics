@@ -1,7 +1,17 @@
 # Implementation Plan: RAG Chatbot Authentication with FastAPI-Users
 
-**Branch**: `authentication` | **Date**: 2025-12-17 | **Spec**: [spec.md](./spec.md)
+**Branch**: `authentication` | **Date**: 2025-12-17 | **Updated**: 2025-12-25 (Navbar Integration) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/authentication/spec.md`
+
+## Integration Update (2025-12-25)
+
+**Main Branch Status**: Now includes redesigned navbar with Sign In/Sign Up buttons (dummy placeholders).
+
+**Integration Changes**:
+- Auth entry point changed from ChatWidget to **Navbar** (`physical-robotics-ai-book/src/theme/Navbar/index.tsx`)
+- Auth forms display as modals when navbar buttons clicked
+- Authenticated state shows user email + Sign Out in navbar (using `Navbar/Content/index.tsx` from auth branch)
+- Frontend structure updated to reflect Navbar integration instead of ChatWidget modification
 
 ## Architectural Decision
 
@@ -132,22 +142,29 @@ backend/
 ├── .env                         # DATABASE_URL configuration
 └── requirements.txt             # MODIFIED - Add FastAPI-Users, asyncpg, SQLAlchemy
 
-frontend/                        # Docusaurus site
+frontend/                        # Docusaurus site (physical-robotics-ai-book/)
 ├── src/
 │   ├── components/
-│   │   ├── ChatWidget/          # MODIFIED - Add auth UI
-│   │   │   ├── ChatWidget.tsx  # MODIFIED - Auth state management
-│   │   │   ├── SignupForm.tsx  # NEW - Signup form with background questions
-│   │   │   ├── SigninForm.tsx  # NEW - Signin form
-│   │   │   └── AuthPrompt.tsx  # NEW - Guest user auth prompt
-│   │   └── Auth/                # NEW - Shared auth components
-│   │       ├── AuthContext.tsx # NEW - React context for auth state
-│   │       └── useAuth.ts      # NEW - Custom hook for auth operations
-│   └── pages/
-│       └── (existing docs pages - no changes)
+│   │   ├── Auth/                # NEW - Auth components & modals
+│   │   │   ├── AuthContext.tsx # NEW - React context for auth state (EXISTING in auth branch)
+│   │   │   ├── SignupForm.tsx  # NEW - Signup modal with background questions (EXISTING in auth branch)
+│   │   │   ├── SigninForm.tsx  # NEW - Signin modal (EXISTING in auth branch)
+│   │   │   ├── AuthPrompt.tsx  # NEW - Guest user auth prompt for chat widget (EXISTING in auth branch)
+│   │   │   ├── Auth.module.css # NEW - Styling for auth components (EXISTING in auth branch)
+│   │   │   └── index.tsx       # NEW - Auth exports (EXISTING in auth branch)
+│   │   ├── ChatWidget/          # MODIFIED - Check auth before allowing chat
+│   │   │   └── ChatWidget.tsx  # MODIFIED - Show AuthPrompt for guests (ALREADY in auth branch)
+│   └── theme/
+│       ├── Navbar/              # MODIFIED - Main integration point
+│       │   ├── index.tsx       # MODIFIED - Add onClick handlers for auth modals (from main branch - needs update)
+│       │   ├── Content/        # Auth-aware navbar content
+│       │   │   └── index.tsx   # EXISTING in auth branch - shows user email + Sign Out when authenticated
+│       │   └── styles.module.css # Navbar styles from main branch
+│       └── Layout/
+│           └── index.tsx       # MODIFIED - Wrap with AuthProvider (EXISTING in auth branch)
 ├── static/
 │   └── (existing static assets - no changes)
-└── package.json                 # MODIFIED - Add Better Auth JS SDK
+└── package.json                 # No additional deps needed (React already included)
 ```
 
 **Structure Decision**: Web application architecture (backend + frontend). Backend handles authentication logic and RAG agent personalization. Frontend provides auth UI integrated into existing Docusaurus chat widget. Minimal changes to existing codebase - authentication is additive layer.
@@ -182,11 +199,13 @@ graph TB
         FastAPIUsers[FastAPI-Users Library]
     end
 
-    ChatWidget -->|POST /auth/signup| AuthAPI
-    ChatWidget -->|POST /auth/signin| AuthAPI
-    SignupForm -->|Submit| ChatWidget
-    SigninForm -->|Submit| ChatWidget
+    ChatWidget -->|Click Sign In/Up from AuthPrompt| SignupForm/SigninForm
+    SignupForm -->|POST /auth/signup| AuthAPI
+    SigninForm -->|POST /auth/signin| AuthAPI
     AuthContext -->|Manage State| ChatWidget
+
+    Navbar -->|Click Sign In/Up buttons| SignupForm/SigninForm
+    Navbar -->|After auth| Display user email + Sign Out
 
     ChatWidget -->|POST /chat/message + JWT token| SessionMiddleware
     SessionMiddleware -->|Validate JWT| FastAPIUsers
@@ -565,13 +584,14 @@ Plan will inform task generation by providing:
 - Write integration tests for full auth flow
 
 ### Phase 2: Frontend Authentication UI (2-3 days)
-- Create AuthContext and useAuth hook
-- Implement SignupForm component with background question dropdowns
-- Implement SigninForm component
-- Implement AuthPrompt for guest users
-- Integrate auth UI into existing ChatWidget component
-- Add client-side validation (email format, required fields)
-- Add error message display (network failures, validation errors)
+- Create AuthContext and useAuth hook (EXISTING in auth branch)
+- Implement SignupForm modal component with background question dropdowns (EXISTING in auth branch)
+- Implement SigninForm modal component (EXISTING in auth branch)
+- Implement AuthPrompt for guest users in chat widget (EXISTING in auth branch)
+- **[NEW]** Integrate auth modals with Navbar Sign In/Sign Up buttons (replace dummy onClick in main branch Navbar)
+- **[NEW]** Ensure Navbar Content shows user email + Sign Out when authenticated (already in auth branch)
+- Add client-side validation (email format, required fields) (EXISTING in auth branch)
+- Add error message display (network failures, validation errors) (EXISTING in auth branch)
 - Write Jest tests for all auth components
 
 ### Phase 3: Personalization Layer (2-3 days)

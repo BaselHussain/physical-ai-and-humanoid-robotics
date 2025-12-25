@@ -1,11 +1,20 @@
-# Tasks: RAG Chatbot Authentication with Better Auth
+# Tasks: RAG Chatbot Authentication with FastAPI-Users
 
 **Input**: Design documents from `/specs/authentication/`
 **Prerequisites**: spec.md (complete), plan.md (complete), research.md (complete), data-model.md (complete), contracts/ (complete)
 
-**Branch**: `authentication`
+**Branch**: `authentication` → **Integration Branch**: TBD (will be created from main)
+**Updated**: 2025-12-25 (Navbar Integration)
 **Total Tasks**: 18 atomic tasks (15-30 min each)
 **Estimated Duration**: 9-12 hours total
+
+## Integration Context
+
+**Main Branch**: Contains redesigned navbar with dummy Sign In/Sign Up buttons at `physical-robotics-ai-book/src/theme/Navbar/index.tsx:30-43`.
+
+**Auth Branch**: Contains complete auth implementation (SignupForm, SigninForm, AuthContext, AuthPrompt, Navbar Content).
+
+**Integration Goal**: Merge auth components into main and connect them to the navbar buttons.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -98,54 +107,82 @@
 
 ---
 
-## Phase 3: Frontend - Signup/Signin Pages in Docusaurus (4 tasks)
+## Phase 3: Frontend - Navbar Integration & Auth Modals (4 tasks)
 
-**Purpose**: Build React authentication UI integrated with Docusaurus chat widget
+**Purpose**: Integrate existing auth components with redesigned Navbar from main branch
 
 **Duration**: ~2.5 hours
 
-- [ ] T009 [US1] Create SignupForm component with email, password, and 3 background dropdown fields in `frontend/src/components/Auth/SignupForm.tsx`
-  - **Duration**: 30 min
-  - **Dependencies**: None (frontend independent)
-  - **Acceptance**: Form with 5 fields (email, password, prog_exp, ros2_fam, hardware), client-side validation, all fields required
-  - **Output**: `frontend/src/components/Auth/SignupForm.tsx`
-  - **Validation**: Submit with missing field → error shown, submit with invalid email → "Invalid email format" shown
+**Note**: Auth components (SignupForm, SigninForm, AuthPrompt, AuthContext) **ALREADY EXIST** in authentication branch and will be merged into the integration branch. This phase focuses on connecting them to the Navbar.
 
-- [ ] T010 [US2] Create SigninForm component with email and password fields in `frontend/src/components/Auth/SigninForm.tsx`
-  - **Duration**: 20 min
-  - **Dependencies**: None (frontend independent)
-  - **Acceptance**: Form with 2 fields (email, password), client-side validation
-  - **Output**: `frontend/src/components/Auth/SigninForm.tsx`
-  - **Validation**: Submit with empty fields → error shown
+- [X] T009 [US1] SignupForm component with email, password, and 3 background dropdown fields
+  - **Status**: ✅ COMPLETED in auth branch
+  - **Location**: `physical-robotics-ai-book/src/components/Auth/SignupForm.tsx`
+  - **Integration**: Copy to integration branch, no changes needed
 
-- [ ] T011 [US3] Create AuthPrompt component for guest users in `frontend/src/components/Auth/AuthPrompt.tsx`
-  - **Duration**: 15 min
-  - **Dependencies**: None (frontend independent)
-  - **Acceptance**: Component shows "Please sign in to use the chat" with Sign In and Sign Up buttons
-  - **Output**: `frontend/src/components/Auth/AuthPrompt.tsx`
-  - **Validation**: Buttons navigate to SignupForm and SigninForm components
+- [X] T010 [US2] SigninForm component with email and password fields
+  - **Status**: ✅ COMPLETED in auth branch
+  - **Location**: `physical-robotics-ai-book/src/components/Auth/SigninForm.tsx`
+  - **Integration**: Copy to integration branch, no changes needed
 
-- [ ] T012 Create AuthContext and useAuth hook for global state management in `frontend/src/components/Auth/AuthContext.tsx`
-  - **Duration**: 25 min
-  - **Dependencies**: T009, T010
-  - **Acceptance**: Context provides auth state (user, isAuthenticated), signup/signin/signout functions
-  - **Output**: `frontend/src/components/Auth/AuthContext.tsx`, `frontend/src/services/api.ts` (axios config with session token handling)
-  - **Validation**: Signup → token stored, isAuthenticated = true, user object populated
+- [X] T011 [US3] AuthPrompt component for guest users
+  - **Status**: ✅ COMPLETED in auth branch
+  - **Location**: `physical-robotics-ai-book/src/components/Auth/AuthPrompt.tsx`
+  - **Integration**: Copy to integration branch, use in ChatWidget for guest restriction
+
+- [X] T012 AuthContext and useAuth hook for global state management
+  - **Status**: ✅ COMPLETED in auth branch
+  - **Location**: `physical-robotics-ai-book/src/components/Auth/AuthContext.tsx`
+  - **Integration**: Copy to integration branch, already wrapped in Layout/index.tsx
 
 ---
 
-## Phase 4: Integration - Protect Chat Widget + Dynamic Agent Instructions (3 tasks)
+## Phase 4: Integration - Navbar + Chat Widget Auth (3 tasks)
 
-**Purpose**: Connect auth to chat widget, implement personalization, handle session expiration
+**Purpose**: Connect Navbar buttons to auth modals, protect chat widget, implement personalization
 
 **Duration**: ~2 hours
 
-- [ ] T013 [US3] Modify ChatWidget to check authentication and show AuthPrompt for guests in `frontend/src/components/ChatWidget/ChatWidget.tsx`
-  - **Duration**: 20 min
-  - **Dependencies**: T011, T012
-  - **Acceptance**: Guest users see AuthPrompt, authenticated users see chat interface
-  - **Output**: `frontend/src/components/ChatWidget/ChatWidget.tsx` (modified)
-  - **Validation**: Sign out → chat widget shows AuthPrompt, sign in → chat widget shows message input
+- [ ] T013 [US1][US2] **[INTEGRATION TASK]** Modify Navbar to trigger auth modals on button click
+  - **Duration**: 30 min
+  - **Dependencies**: T009-T012 (auth components exist)
+  - **File**: `physical-robotics-ai-book/src/theme/Navbar/index.tsx`
+  - **Changes**:
+    1. Import `useState` for modal state management
+    2. Import `SignupForm`, `SigninForm` from `@site/src/components/Auth`
+    3. Add state: `const [showSignup, setShowSignup] = useState(false)` and `const [showSignin, setShowSignin] = useState(false)`
+    4. Replace dummy `onClick={() => console.log('Sign In clicked')}` with `onClick={() => setShowSignin(true)}`
+    5. Replace dummy `onClick={() => console.log('Sign Up clicked')}` with `onClick={() => setShowSignup(true)}`
+    6. Add modal overlays after navbar closing tag:
+       ```tsx
+       {showSignup && (
+         <div className={styles.modalOverlay} onClick={() => setShowSignup(false)}>
+           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+             <SignupForm
+               onSubmit={async (email, password, background) => {
+                 await signup(email, password, background);
+                 setShowSignup(false);
+               }}
+               onSwitchToSignin={() => {
+                 setShowSignup(false);
+                 setShowSignin(true);
+               }}
+             />
+           </div>
+         </div>
+       )}
+       ```
+       (same pattern for signin modal)
+  - **Acceptance**: Click "Sign Up" in navbar → modal appears with signup form, click "Sign In" → signin modal appears
+  - **Validation**:
+    - Modal closes when clicking outside
+    - Successful signup → modal closes, navbar shows user email (from Navbar Content)
+    - Switch between signup/signin works
+
+- [ ] T013b [US3] ChatWidget guest restriction (already implemented in auth branch)
+  - **Status**: ✅ COMPLETED in auth branch
+  - **Location**: ChatWidget already checks `isAuthenticated` and shows AuthPrompt for guests
+  - **Integration**: Copy ChatWidget from auth branch, ensure AuthPrompt imports work
 
 - [ ] T014 [US1] [US2] Modify backend /chat/message endpoint to fetch user background and adjust RAG agent prompt in `backend/src/chat/routes.py`
   - **Duration**: 30 min
