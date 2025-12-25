@@ -59,9 +59,12 @@
 
 - Q: Should we use FastAPI-Users or Better Auth as originally required? → A: Use Better Auth as a separate Node.js microservice; FastAPI validates JWT tokens
 - Q: How will FastAPI validate Better Auth tokens? → A: FastAPI uses PyJWT to validate JWT tokens against Better Auth's JWKS endpoint (RS256 asymmetric signing)
-- Q: Where will custom user background fields be stored? → A: In Better Auth's Neon PostgreSQL database, either as custom columns or JSONB metadata field
-- Q: How will FastAPI access user background for personalization? → A: Custom fields included as JWT custom claims, or FastAPI fetches from Better Auth API using user ID (sub)
+- Q: Where will custom user background fields be stored? → A: JSONB metadata column in Better Auth user table, included as JWT custom claims for FastAPI access
+- Q: How will FastAPI access user background for personalization? → A: Custom fields extracted directly from JWT custom claims (no additional database query needed)
 - Q: How will Better Auth and FastAPI services be deployed? → A: Better Auth and FastAPI as separate Render services with cross-origin communication (auth.yourdomain.com and api.yourdomain.com)
+- Q: How should JWT access tokens be managed for session persistence and security? → A: Short-lived access tokens (15min) + refresh tokens (7 days) with automatic renewal
+- Q: How should the frontend handle scenarios when the Better Auth service is temporarily unavailable? → A: Display error banner "Authentication service temporarily unavailable. Please try again." with auto-retry after 30 seconds
+- Q: What CORS origin configuration should be used for Better Auth and FastAPI services in production? → A: Allow production domain and common subdomains pattern (e.g., *.yourdomain.com, docs.yourdomain.com)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -95,7 +98,7 @@ A registered user returns to the documentation site, signs in with their existin
 1. **Given** an existing registered user, **When** they click "Sign In" in the navbar header, **Then** they see a login modal with email and password fields
 2. **Given** a user on the signin modal, **When** they enter correct credentials and submit, **Then** they are authenticated, the modal closes, and the navbar displays their email with a Sign Out button
 3. **Given** an authenticated user with a saved background profile, **When** they ask any question to the RAG chatbot, **Then** the response is personalized based on their stored expertise level and hardware context
-4. **Given** an authenticated user, **When** they close and reopen the browser (session persistence), **Then** they remain signed in (navbar shows email + Sign Out) and chatbot personalization continues
+4. **Given** an authenticated user, **When** they close and reopen the browser within 7 days (refresh token persistence), **Then** they remain signed in (navbar shows email + Sign Out) and chatbot personalization continues
 
 ---
 
@@ -122,8 +125,9 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 - When a user enters an invalid email format, client-side validation shows instant error "Invalid email format"; server-side validation also rejects if client validation is bypassed
 - Password reset/forgot password is out of scope for this phase
 - All background questions are required; users cannot submit signup form without completing all fields (programming experience, ROS 2 familiarity, hardware access)
-- When the Better Auth session expires during an active chat, the system allows the user to continue typing their current message; when the user attempts to send, a re-authentication prompt appears; after successful re-login, the typed message is preserved and can be sent
+- When the Better Auth refresh token expires (after 7 days) during an active chat, the system allows the user to continue typing their current message; when the user attempts to send, a re-authentication prompt appears; after successful re-login, the typed message is preserved and can be sent; access token expiration (15 minutes) is handled automatically via silent token renewal
 - When network failures occur during authentication (signup/signin), the system shows user-friendly error message "Connection failed. Please check your internet and try again." with a retry button (no automatic retry)
+- When Better Auth service is temporarily unavailable or unreachable, the system displays error banner "Authentication service temporarily unavailable. Please try again." and automatically retries connection every 30 seconds until service is reachable or user dismisses banner
 - User profile editing after registration is out of scope for this phase
 - Background questions use dropdown selection only (no free text input), preventing malformed or overly long data entry since all values are pre-defined options
 
@@ -150,20 +154,23 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 - **FR-012**: RAG agent personalization MUST adapt response complexity based on programming experience level (e.g., beginner → simple explanations, expert → technical depth)
 - **FR-013**: RAG agent personalization MUST adapt ROS 2 explanations based on familiarity level (e.g., none → foundational concepts, advanced → advanced features)
 - **FR-014**: RAG agent personalization MUST reference user's hardware context when relevant (e.g., "Simulation only" users get simulation-focused guidance, "Physical robots/sensors" users get hardware-specific advice, "None" users get general conceptual explanations)
-- **FR-015**: System MUST replace current in-memory session management with FastAPI-Users' JWT-based session management, storing user data in Neon PostgreSQL with a default JWT token expiration of 7 days
-- **FR-016**: System MUST handle session expiration gracefully by allowing users to continue typing their current message, displaying a re-authentication prompt when attempting to send, and preserving the typed message after successful re-login
+- **FR-015**: System MUST implement JWT-based authentication with short-lived access tokens (15 minutes expiration) and long-lived refresh tokens (7 days expiration); system MUST automatically renew access tokens using refresh token before expiration without user interaction
+- **FR-016**: System MUST handle refresh token expiration (7 days) gracefully by allowing users to continue typing their current message, displaying a re-authentication prompt when attempting to send, and preserving the typed message after successful re-login; access token expiration (15 minutes) MUST be handled silently via automatic renewal
 - **FR-017**: System MUST prevent duplicate email registrations by checking existing accounts before creation and display error message "Email already registered. Try signing in instead." with a clickable link redirecting to the sign-in form
 - **FR-018**: System MUST provide clear error messages for authentication failures (e.g., incorrect password, email not found)
 - **FR-018a**: System MUST handle network failures during authentication operations by displaying user-friendly error message "Connection failed. Please check your internet and try again." with a retry button (no automatic retry attempts)
+- **FR-018b**: System MUST handle Better Auth service unavailability by displaying error banner "Authentication service temporarily unavailable. Please try again." and automatically retry connection after 30 seconds; retry attempts continue until service is reachable or user dismisses banner
 - **FR-019**: System MUST use Neon PostgreSQL database configured via DATABASE_URL environment variable from .env file for all authentication data storage (users, sessions, background profiles)
 
 ### Key Entities *(include if feature involves data)*
 
-- **User Account**: Represents an authenticated user with email, hashed password (Argon2), and unique identifier managed by FastAPI-Users
-- **User Background Profile**: Contains expertise metadata including programming experience level, ROS 2 familiarity, and hardware access information; stored in user metadata JSONB field
-- **Session**: Represents an authenticated user's active JWT token managed by FastAPI-Users, with 7-day expiration
-- **Chat Message**: Represents a user's query to the RAG chatbot, associated with the authenticated user and their background context
-- **Personalized Response**: Represents the RAG agent's response, generated with system prompt dynamically adjusted based on user background
+- **User Account**: Represents an authenticated user with email, hashed password (Argon2), unique identifier, and metadata JSONB column managed by Better Auth; stored in Neon PostgreSQL
+- **User Background Profile**: Contains expertise metadata (programming_experience, ros2_familiarity, hardware_access); stored in user.metadata JSONB field in Better Auth database
+- **JWT Access Token**: Short-lived (15 minutes) stateless authentication token issued by Better Auth containing standard claims (sub, email, exp) plus custom claims namespace with user background fields; validated by FastAPI using JWKS; automatically renewed via refresh token
+- **Refresh Token**: Long-lived (7 days) secure token stored by Better Auth for automatic access token renewal; rotated on each use; invalidated on signout
+- **JWT Custom Claims**: Namespace containing user background (e.g., `https://yourdomain.com/claims: { programming_experience, ros2_familiarity, hardware_access }`); included in token by Better Auth during signin
+- **Chat Message**: Represents a user's query to the RAG chatbot, sent with JWT Authorization header
+- **Personalized Response**: RAG agent's response, generated with system prompt dynamically adjusted based on background extracted from JWT claims
 
 ## Success Criteria *(mandatory)*
 
@@ -214,7 +221,7 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 - DATABASE_URL environment variable is properly configured with valid Neon PostgreSQL connection string
 - FastAPI-Users supports Neon PostgreSQL via SQLAlchemy async adapter
 - User background questions will be displayed as dropdown fields in the signup UI
-- Session duration is set to 7 days; users must re-authenticate weekly
+- Refresh token duration is set to 7 days; access tokens expire after 15 minutes with automatic renewal; users must re-authenticate weekly when refresh token expires
 - The existing chat widget UI can be extended to include authentication UI elements
 - Network connectivity is stable during authentication flows
 - Users will provide truthful background information (no verification against actual skill level)
@@ -238,7 +245,7 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 - Must use Better Auth as the authentication library (original requirement)
 - Better Auth runs as **separate Node.js microservice**, not embedded in FastAPI
 - **Deployment**: Better Auth and FastAPI deployed as **separate Render services** with distinct URLs (e.g., auth.yourdomain.com and api.yourdomain.com)
-- **CORS Configuration**: Both services must configure CORS to allow cross-origin requests from Docusaurus frontend domain
+- **CORS Configuration**: Both services must configure CORS to allow cross-origin requests from production domain and subdomains (e.g., *.yourdomain.com, docs.yourdomain.com); localhost origins allowed only in development environment
 - **Shared Database**: Both services connect to same Neon PostgreSQL instance via DATABASE_URL
 - FastAPI validates JWT tokens but does NOT handle authentication logic directly
 - Must replace current in-memory session management with JWT-based authentication
@@ -262,8 +269,10 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 ### Security
 
-- Passwords must be validated using FastAPI-Users' default password strength requirements and hashed using Argon2 (secure, modern hashing algorithm)
-- Session tokens must be cryptographically secure and unpredictable
+- Passwords must be validated using Better Auth's default password strength requirements and hashed using Argon2 (secure, modern hashing algorithm)
+- Access tokens (15 min) and refresh tokens (7 days) must be cryptographically secure and unpredictable; refresh tokens must be rotated on each use
+- JWT tokens must use RS256 asymmetric signing with Better Auth managing private keys and FastAPI validating via JWKS public keys
+- CORS must be configured to allow only production domain and subdomains (*.yourdomain.com); wildcard origins (*) must never be used in production to prevent CSRF attacks
 - User background data must not be exposed in client-side logs or network responses outside authenticated contexts
 - SQL injection and XSS vulnerabilities must be prevented through parameterized queries and input sanitization
 
@@ -280,6 +289,7 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 - JWT tokens remain valid across server restarts (stateless authentication)
 - Failed authentication attempts must not crash the application or expose stack traces to users
 - System must gracefully handle Neon PostgreSQL database unavailability and display user-friendly error messages
+- Frontend must handle Better Auth service unavailability with error banner and automatic reconnection attempts every 30 seconds
 
 ## Risks & Mitigations *(optional - include if relevant)*
 
