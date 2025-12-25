@@ -1,10 +1,10 @@
-# Feature Specification: RAG Chatbot Authentication with FastAPI-Users
+# Feature Specification: RAG Chatbot Authentication with Better Auth
 
 **Feature Branch**: `authentication`
 **Created**: 2025-12-15
-**Updated**: 2025-12-25 (Integration with Redesigned Navbar)
-**Status**: In Progress - Integration Phase
-**Input**: User description: "RAG Chatbot Authentication - Implement Signup and Signin using FastAPI-Users (industry-standard Python authentication library). During signup, ask custom questions about user's software and hardware background (years of programming experience, ROS 2/robotics familiarity, hardware access). Store this in user profile metadata. Use this background to personalize RAG chatbot responses by dynamically adjusting the docs_agent system prompt. Must use Neon PostgreSQL (DATABASE_URL from .env), replace in-memory sessions with database-backed sessions, and be deployable on Render free tier."
+**Updated**: 2025-12-25 (Better Auth Microservice Architecture)
+**Status**: In Progress - Architecture Updated
+**Input**: User description: "RAG Chatbot Authentication with Better Auth - Implement Signup and Signin using Better Auth. During signup, ask custom questions about user's software and hardware background (years of programming experience, ROS 2/robotics familiarity, hardware access). Store this in Better Auth user profile/metadata. Use this background to personalize RAG chatbot responses by dynamically adjusting the docs_agent system prompt. Must use Neon PostgreSQL (DATABASE_URL from .env), replace in-memory sessions with JWT-based authentication, and be deployable on Render free tier."
 
 ## Integration Context (2025-12-25)
 
@@ -17,12 +17,25 @@
 - **Auth Forms**: Display as modals/overlays when navbar buttons are clicked
 - **Layout Integration**: AuthProvider already wraps app in `Layout/index.tsx` on authentication branch
 
-## Architectural Decision Note
+## Architectural Decision: Better Auth Microservice Architecture
 
-**Original Requirement**: Better Auth
-**Implementation**: FastAPI-Users
+**Requirement**: Better Auth
+**Implementation**: Better Auth as separate Node.js microservice + FastAPI for RAG chatbot
 
-**Rationale**: Better Auth is a JavaScript/TypeScript-only authentication library with no Python SDK. After researching via Better Auth MCP server, confirmed that Better Auth requires Node.js runtime and only supports JavaScript frameworks (Next.js, Express, Nuxt, etc.). For our Python/FastAPI backend, FastAPI-Users is the industry-standard equivalent, providing identical functionality: user registration with custom fields, email/password authentication, session management with PostgreSQL, JWT tokens, and secure password hashing (Argon2). All functional requirements (FR-001 through FR-019) are fully achievable with FastAPI-Users.
+**Rationale**: After analyzing Better Auth documentation via Better Auth MCP server, confirmed that Better Auth can be deployed as a **standalone authentication microservice** that FastAPI consumes via JWT validation. This provides:
+
+1. **Proper separation of concerns**: Auth service handles authentication, FastAPI handles RAG chatbot
+2. **Meets original requirement**: Uses Better Auth as specified
+3. **Modern microservices architecture**: Each service has single responsibility
+4. **Better Auth advantages**:
+   - Native Neon PostgreSQL support (Kysely adapter)
+   - Built-in JWT with custom claims for user background
+   - Exposes REST API endpoints (`/api/auth/*`)
+   - Production-ready session management
+   - Secure password hashing (Argon2)
+5. **FastAPI integration**: Validates JWT tokens using Better Auth's JWKS endpoint, extracts user profile from JWT claims
+
+**Architecture**: Better Auth (Node.js) ↔ Neon PostgreSQL | Frontend ↔ Better Auth (signup/signin) | Frontend ↔ FastAPI (chat, sends JWT) | FastAPI validates JWT → personalizes responses
 
 ## Clarifications
 
@@ -36,11 +49,18 @@
 
 ### Session 2025-12-17
 
-- Q: What are the password strength requirements beyond minimum 8 characters? → A: FastAPI-Users library handles all password validation (including strength requirements) using its default secure settings with Argon2 hashing
+- Q: What are the password strength requirements beyond minimum 8 characters? → A: Better Auth library handles all password validation using default secure settings with Argon2 hashing
 - Q: What input format should be used for hardware access field - single-select dropdown or multi-select? → A: Single-select dropdown with mutually exclusive options: "None", "Simulation only", "Physical robots/sensors"
-- Q: How should the system handle invalid email formats? → A: Client-side validation shows instant error "Invalid email format" before submission + server-side validation rejects with same error message if client validation bypassed
+- Q: How should the system handle invalid email formats? → A: Client-side validation shows instant error "Invalid email format" before submission + Better Auth server-side validation rejects with same error message if client validation bypassed
 - Q: How should the system handle network failures during authentication? → A: Show user-friendly error message "Connection failed. Please check your internet and try again." with retry button; no automatic retry
 - Q: How should the system handle very long or malformed input in background questions? → A: Enforce dropdown selection only (no free text input) - users cannot enter malformed data since all values are pre-defined options from dropdowns
+
+### Session 2025-12-25 (Architecture Update)
+
+- Q: Should we use FastAPI-Users or Better Auth as originally required? → A: Use Better Auth as a separate Node.js microservice; FastAPI validates JWT tokens
+- Q: How will FastAPI validate Better Auth tokens? → A: FastAPI uses PyJWT to validate JWT tokens against Better Auth's JWKS endpoint (RS256 asymmetric signing)
+- Q: Where will custom user background fields be stored? → A: In Better Auth's Neon PostgreSQL database, either as custom columns or JSONB metadata field
+- Q: How will FastAPI access user background for personalization? → A: Custom fields included as JWT custom claims, or FastAPI fetches from Better Auth API using user ID (sub)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -203,13 +223,14 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 ## Dependencies *(mandatory)*
 
-- FastAPI-Users library (external dependency, must be installed and configured)
-- Existing FastAPI backend with uv environment (native support for FastAPI-Users)
-- Existing Docusaurus frontend with React components (must support authentication UI)
-- Existing RAG agent (docs_agent) (must support dynamic system prompt injection)
-- Neon PostgreSQL database (external service, accessed via DATABASE_URL from .env for user and session storage)
-- DATABASE_URL environment variable in .env file (must contain valid Neon PostgreSQL connection string)
-- SQLAlchemy async adapter with asyncpg driver for Neon PostgreSQL connection
+- **Better Auth** (Node.js library, runs as separate microservice)
+- **Node.js 18+** runtime for Better Auth service
+- **Neon PostgreSQL** database (via DATABASE_URL, shared between Better Auth and FastAPI)
+- **Existing FastAPI backend** with uv environment (validates JWT via PyJWT)
+- **Existing Docusaurus frontend** with React components (integrates Better Auth client SDK)
+- **Existing RAG agent** (docs_agent) (supports dynamic system prompt injection)
+- **Better Auth MCP server** for documentation and integration examples
+- **PyJWT[crypto]** library for FastAPI JWT validation (RS256 support)
 
 ## Constraints *(mandatory)*
 
