@@ -1,4 +1,11 @@
 /**
+ * Tailwind CSS imports
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
  * Custom CSS for Physical Robotics AI Book
  * Enhanced sidebar with module/chapter numbering and improved text styling
  */
@@ -260,3 +267,69 @@
 [data-theme='dark'] .menu__list .menu__list .menu__list-item .menu__link--active {
   background-color: rgba(74, 222, 128, 0.15); /* Slightly stronger for visibility */
 }
+
+/* ==================================================
+   T013: Enhanced Typography with Tailwind Utilities
+   ================================================== */
+.markdown {
+  @apply text-base leading-relaxed;
+}
+
+.markdown h1 {
+  @apply text-4xl font-bold mb-6 mt-8;
+}
+
+.markdown h2 {
+  @apply text-3xl font-semibold mb-4 mt-6;
+}
+
+.markdown h3 {
+  @apply text-2xl font-semibold mb-3 mt-5;
+}
+
+.markdown h4 {
+  @apply text-xl font-medium mb-2 mt-4;
+}
+
+/* ==================================================
+   T014: Section Dividers with Gradient
+   ================================================== */
+.markdown > h2::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+  margin-bottom: 1.5rem;
+}
+
+/* ==================================================
+   T015: Enhanced Table Styling
+   ================================================== */
+.markdown table {
+  @apply w-full border-collapse my-6;
+}
+
+.markdown th {
+  @apply bg-gray-100 dark:bg-gray-800 px-4 py-3 text-left font-semibold border-b-2 border-gray-300 dark:border-gray-600;
+}
+
+.markdown td {
+  @apply px-4 py-3 border-b border-gray-200 dark:border-gray-700;
+}
+
+.markdown tr:nth-child(even) {
+  @apply bg-gray-50 dark:bg-gray-900;
+}
+
+/* ==================================================
+   T016: Code Block Enhancements
+   ================================================== */
+.theme-code-block {
+  @apply rounded-lg shadow-md border border-gray-200 dark:border-gray-700 my-6;
+}
+
+.theme-code-block-title {
+  @apply bg-gray-100 dark:bg-gray-800 px-4 py-2 text-sm font-mono border-b border-gray-300 dark:border-gray-600;
+}
+

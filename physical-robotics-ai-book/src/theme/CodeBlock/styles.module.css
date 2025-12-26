@@ -1,0 +1,262 @@
+/* Code Block Container */
+.codeBlockContainer {
+  position: relative;
+  margin: 1.5rem 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
+}
+
+[data-theme='dark'] .codeBlockContainer {
+  background-color: #1e1e1e;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Language Badge */
+.languageBadge {
+  position: absolute;
+  top: 0.75rem;
+  right: 4rem; /* Space for copy button */
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Monaco', 'Courier New', monospace;
+  border-radius: 0.375rem;
+  z-index: 2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Code Block Wrapper */
+.codeBlockWrapper {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* Override Docusaurus default code block styles */
+.codeBlockWrapper :global(.theme-code-block) {
+  margin: 0;
+  border-radius: 0.75rem;
+  box-shadow: none;
+  border: none;
+}
+
+.codeBlockWrapper :global(.prism-code) {
+  background-color: #282c34 !important;
+  color: #abb2bf !important; /* Light text color for readability */
+  border-radius: 0;
+  padding: 1.25rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+[data-theme='dark'] .codeBlockWrapper :global(.prism-code) {
+  background-color: #1e1e1e !important;
+  color: #d4d4d4 !important; /* Lighter text for dark theme */
+}
+
+/* Code Block Title */
+.codeBlockWrapper :global(.codeBlockTitle_node_modules-\\@docusaurus-theme-classic-lib-theme-CodeBlock-Content-styles-module) {
+  background-color: #21252b;
+  color: #abb2bf;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .codeBlockWrapper :global(.codeBlockTitle_node_modules-\\@docusaurus-theme-classic-lib-theme-CodeBlock-Content-styles-module) {
+  background-color: #161616;
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Copy Button Enhancement - Keyboard Accessible */
+.codeBlockWrapper :global(button[class*="copyButton"]) {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(37, 99, 235, 0.8);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 3;
+  opacity: 0.9;
+}
+
+.codeBlockWrapper :global(button[class*="copyButton"]:hover) {
+  background-color: rgba(37, 99, 235, 1);
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.codeBlockWrapper :global(button[class*="copyButton"]:focus) {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+.codeBlockWrapper :global(button[class*="copyButton"]:active) {
+  transform: translateY(0);
+}
+
+/* Copy Button Icon/Text */
+.codeBlockWrapper :global(button[class*="copyButton"]::before) {
+  content: 'Copy';
+}
+
+.codeBlockWrapper :global(button[class*="copyButton"][class*="copied"]::before) {
+  content: 'Copied!';
+}
+
+/* Syntax Highlighting Enhancements */
+.codeBlockWrapper :global(.token.comment),
+.codeBlockWrapper :global(.token.prolog),
+.codeBlockWrapper :global(.token.doctype),
+.codeBlockWrapper :global(.token.cdata) {
+  color: #6a9955;
+}
+
+.codeBlockWrapper :global(.token.punctuation) {
+  color: #d4d4d4;
+}
+
+.codeBlockWrapper :global(.token.property),
+.codeBlockWrapper :global(.token.tag),
+.codeBlockWrapper :global(.token.boolean),
+.codeBlockWrapper :global(.token.number),
+.codeBlockWrapper :global(.token.constant),
+.codeBlockWrapper :global(.token.symbol),
+.codeBlockWrapper :global(.token.deleted) {
+  color: #b5cea8;
+}
+
+.codeBlockWrapper :global(.token.selector),
+.codeBlockWrapper :global(.token.attr-name),
+.codeBlockWrapper :global(.token.string),
+.codeBlockWrapper :global(.token.char),
+.codeBlockWrapper :global(.token.builtin),
+.codeBlockWrapper :global(.token.inserted) {
+  color: #ce9178;
+}
+
+.codeBlockWrapper :global(.token.operator),
+.codeBlockWrapper :global(.token.entity),
+.codeBlockWrapper :global(.token.url),
+.codeBlockWrapper :global(.language-css .token.string),
+.codeBlockWrapper :global(.style .token.string) {
+  color: #d4d4d4;
+}
+
+.codeBlockWrapper :global(.token.atrule),
+.codeBlockWrapper :global(.token.attr-value),
+.codeBlockWrapper :global(.token.keyword) {
+  color: #569cd6;
+}
+
+.codeBlockWrapper :global(.token.function),
+.codeBlockWrapper :global(.token.class-name) {
+  color: #dcdcaa;
+}
+
+.codeBlockWrapper :global(.token.regex),
+.codeBlockWrapper :global(.token.important),
+.codeBlockWrapper :global(.token.variable) {
+  color: #d16969;
+}
+
+/* Line Numbers */
+.codeBlockWrapper :global(.token-line) {
+  line-height: 1.6;
+  padding: 0 0.5rem;
+}
+
+.codeBlockWrapper :global(.token-line::before) {
+  color: #858585;
+  padding-right: 1rem;
+}
+
+/* Highlighted Lines */
+.codeBlockWrapper :global(.docusaurus-highlight-code-line) {
+  background-color: rgba(255, 255, 255, 0.05);
+  display: block;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+  border-left: 3px solid #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .codeBlockWrapper :global(.prism-code) {
+    font-size: 0.85rem;
+    padding: 1rem 0.75rem;
+  }
+
+  .languageBadge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    top: 0.5rem;
+    right: 3.5rem;
+  }
+
+  .codeBlockWrapper :global(button[class*="copyButton"]) {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .codeBlockWrapper :global(.prism-code) {
+    font-size: 0.8rem;
+  }
+
+  .languageBadge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .codeBlockContainer {
+    box-shadow: none;
+    border: 1px solid #000;
+    break-inside: avoid;
+  }
+
+  .languageBadge,
+  .codeBlockWrapper :global(button[class*="copyButton"]) {
+    display: none;
+  }
+
+  .codeBlockWrapper :global(.prism-code) {
+    background-color: #f5f5f5 !important;
+    color: #000;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .codeBlockWrapper :global(button[class*="copyButton"]) {
+    transition: none;
+  }
+
+  .codeBlockWrapper :global(button[class*="copyButton"]:hover) {
+    transform: none;
+  }
+}
