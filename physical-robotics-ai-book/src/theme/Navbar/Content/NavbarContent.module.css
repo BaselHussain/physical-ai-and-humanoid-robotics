@@ -1,0 +1,33 @@
+.authInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  padding: 0 1rem;
+}
+
+.userName {
+  color: var(--ifm-navbar-link-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.signoutButton {
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.signoutButton:hover {
+  background-color: var(--ifm-color-primary-dark);
+}
+
+.signoutButton:active {
+  background-color: var(--ifm-color-primary-darker);
+}

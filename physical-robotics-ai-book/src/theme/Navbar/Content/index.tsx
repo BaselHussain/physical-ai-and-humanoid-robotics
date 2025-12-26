@@ -8,15 +8,29 @@ import React from 'react';
 import Content from '@theme-original/Navbar/Content';
 import type ContentType from '@theme/Navbar/Content';
 import type {WrapperProps} from '@docusaurus/types';
-import NavbarContent from '../../../components/NavbarContent/NavbarContent';
+import { useAuth } from '../../../components/Auth';
+import styles from './NavbarContent.module.css';
 
 type Props = WrapperProps<typeof ContentType>;
 
 export default function ContentWrapper(props: Props): JSX.Element {
+  const { user, isAuthenticated, signout } = useAuth();
+
   return (
     <>
       <Content {...props} />
-      <NavbarContent />
+      {isAuthenticated && user && (
+        <div className={styles.authInfo}>
+          <span className={styles.userName}>{user.name}</span>
+          <button
+            className={styles.signoutButton}
+            onClick={() => signout()}
+            aria-label="Sign out"
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
     </>
   );
 }
