@@ -1,6 +1,6 @@
 import cohere
 from qdrant_client import QdrantClient
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from agents import Runner
@@ -14,24 +14,38 @@ import sys
 # Check if we're running as a package (from root) or directly (from backend dir)
 if __package__:
     # Running as package from root: uvicorn backend.main:app
-    from .app.rag_agent import docs_agent
+    from .app.rag_agent import docs_agent, create_personalized_agent
     from .app.session_manager import create_session, get_session, add_message
     from .models.chat import ChatRequest, SessionResponse
     from .app.chatkit_server import RAGChatKitServer
     from .app.chatkit_store import MemoryStore
     from .app import database
     from .app import chat_history
+    from .src.auth.routes import router as auth_router
+    from .src.auth.config import engine as auth_engine
 else:
     # Running from backend directory: uvicorn main:app
-    from app.rag_agent import docs_agent
+    from app.rag_agent import docs_agent, create_personalized_agent
     from app.session_manager import create_session, get_session, add_message
     from models.chat import ChatRequest, SessionResponse
     from app.chatkit_server import RAGChatKitServer
     from app.chatkit_store import MemoryStore
     from app import database
     from app import chat_history
+    from src.auth.routes import router as auth_router
+    from src.auth.config import engine as auth_engine
 
 from chatkit.server import StreamingResult
+
+# Import JWT authentication (Better Auth integration)
+if __package__:
+    from .src.auth.jwt_middleware import require_jwt_auth, get_optional_jwt
+    from .src.auth.claims_extractor import extract_background_profile, extract_all_user_info
+    from .src.auth.personalization import map_background_to_expertise, generate_system_prompt_prefix
+else:
+    from src.auth.jwt_middleware import require_jwt_auth, get_optional_jwt
+    from src.auth.claims_extractor import extract_background_profile, extract_all_user_info
+    from src.auth.personalization import map_background_to_expertise, generate_system_prompt_prefix
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -51,12 +65,22 @@ qdrant = QdrantClient(
 )
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(title="RAG Chatbot API with Authentication")
+
+# Include authentication routes
+app.include_router(auth_router)
 
 # Enable CORS for local development and production
+# Supports wildcard subdomains and localhost
+import os
+cors_origins = os.getenv(
+    'CORS_ORIGINS',
+    'http://localhost:3000,http://localhost:3001,https://baselhussain.github.io,https://yourdomain.com'
+).split(',')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "https://baselhussain.github.io"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,18 +92,22 @@ app.add_middleware(
 async def startup_event():
     """Initialize database connection pool on startup"""
     try:
-        logger.info("🚀 Starting RAG Chatbot API...")
+        logger.info("🚀 Starting RAG Chatbot API with Authentication...")
         # Initialize Neon Postgres connection pool
         await database.get_pool()
-        logger.info("✅ Database connection pool initialized")
+        logger.info("[OK] Chat history database connection pool initialized")
+        logger.info("[OK] Authentication database (users table) ready")
+        logger.info("[OK] Auth endpoints available at: /auth/signup, /auth/signin, /auth/signout, /auth/session")
     except ValueError as e:
         # NEON_DATABASE_URL not set - log warning but don't crash (optional feature)
-        logger.warning(f"⚠️ Database persistence disabled: {e}")
+        logger.warning(f"[WARNING] Database persistence disabled: {e}")
         logger.warning("Chat history will not be saved. Add NEON_DATABASE_URL to .env to enable persistence.")
+        logger.info("[OK] Authentication database (users table) ready")
     except Exception as e:
         # Database connection failed - log error but continue (graceful degradation)
-        logger.error(f"❌ Database initialization failed: {e}")
+        logger.error(f"[ERROR] Database initialization failed: {e}")
         logger.error("Chat history persistence will not work. Fix database connection to enable it.")
+        logger.info("[OK] Authentication database (users table) ready")
 
 
 @app.on_event("shutdown")
@@ -87,10 +115,17 @@ async def shutdown_event():
     """Close database connection pool on shutdown"""
     try:
         logger.info("👋 Shutting down RAG Chatbot API...")
+
+        # Close chat history database pool
         await database.close_pool()
-        logger.info("✅ Database connection pool closed")
+        logger.info("✅ Chat history database pool closed")
+
+        # Dispose authentication database engine
+        await auth_engine.dispose()
+        logger.info("✅ Authentication database engine disposed")
+
     except Exception as e:
-        logger.error(f"Error closing database pool: {e}")
+        logger.error(f"Error during shutdown: {e}")
 
 # Define health and API routes FIRST (before mounting ChatKit)
 # This ensures these routes take precedence
@@ -121,11 +156,31 @@ async def create_session_endpoint():
 
 
 @app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
-    """Handle chat requests with streaming SSE response - enhanced with proper RAG"""
+async def chat_endpoint(
+    request: ChatRequest,
+    jwt_payload: dict = Depends(require_jwt_auth)
+):
+    """
+    Handle chat requests with streaming SSE response - enhanced with proper RAG.
+
+    Requires JWT authentication from Better Auth.
+    Personalizes responses based on user background profile from JWT custom claims.
+    """
     session = get_session(request.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
+    # Extract user info and background from JWT
+    user_info = extract_all_user_info(jwt_payload)
+    background_profile = user_info.get('background')
+
+    # Log authentication and personalization status
+    logger.info(f"Authenticated user: {user_info.get('email')} (ID: {user_info.get('user_id')})")
+    if background_profile:
+        expertise_level = map_background_to_expertise(background_profile)
+        logger.info(f"User background: {expertise_level} (prog={background_profile.programming_experience}, ros2={background_profile.ros2_familiarity})")
+    else:
+        logger.info("No background profile in JWT - using default personalization")
 
     # Add user message to in-memory session (existing functionality)
     add_message(request.session_id, "user", request.message)
@@ -142,11 +197,19 @@ async def chat_endpoint(request: ChatRequest):
     except Exception as e:
         logger.error(f"⚠️ Failed to save user message to database: {e}")
 
+    # Generate personalized system prompt prefix based on user background
+    personalization_prefix = generate_personalized_system_prompt(background_profile)
+    logger.info(f"Using personalized system prompt: {personalization_prefix[:80]}...")
+
+    # Create personalized agent instance
+    personalized_agent = create_personalized_agent(personalization_prefix)
+
     async def generate():
         try:
-            # Use the streaming runner with our RAG-enabled docs_agent
+            # Use the streaming runner with our personalized RAG-enabled agent
             # The agent will automatically retrieve relevant documentation before responding
-            result = Runner.run_streamed(docs_agent, input=request.message)
+            # with personalization based on user's expertise level and hardware access
+            result = Runner.run_streamed(personalized_agent, input=request.message)
 
             assistant_content = ""
             has_content = False

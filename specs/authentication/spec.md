@@ -2,8 +2,40 @@
 
 **Feature Branch**: `authentication`
 **Created**: 2025-12-15
-**Status**: Draft
-**Input**: User description: "RAG Chatbot Authentication with Better Auth - Implement Signup and Signin using Better Auth. At signup, ask custom questions about the user's software and hardware background. Store this background information in Better Auth user profile/metadata. Use this background to personalize the RAG chatbot responses."
+**Updated**: 2025-12-25 (Better Auth Microservice Architecture)
+**Status**: In Progress - Architecture Updated
+**Input**: User description: "RAG Chatbot Authentication with Better Auth - Implement Signup and Signin using Better Auth. During signup, ask custom questions about user's software and hardware background (years of programming experience, ROS 2/robotics familiarity, hardware access). Store this in Better Auth user profile/metadata. Use this background to personalize RAG chatbot responses by dynamically adjusting the docs_agent system prompt. Must use Neon PostgreSQL (DATABASE_URL from .env), replace in-memory sessions with JWT-based authentication, and be deployable on Render free tier."
+
+## Integration Context (2025-12-25)
+
+**Main Branch Changes**: The main branch now includes a redesigned site with a new header/navbar component that contains Sign In and Sign Up buttons. These buttons are currently dummy placeholders.
+
+**Integration Scope**:
+- **Auth Entry Point**: Navbar Sign In/Sign Up buttons (`physical-robotics-ai-book/src/theme/Navbar/index.tsx:30-43`)
+- **Implementation**: Replace dummy onClick handlers with auth modal triggers
+- **After Auth**: Navbar shows user email and Sign Out button (already implemented in authentication branch at `Navbar/Content/index.tsx`)
+- **Auth Forms**: Display as modals/overlays when navbar buttons are clicked
+- **Layout Integration**: AuthProvider already wraps app in `Layout/index.tsx` on authentication branch
+
+## Architectural Decision: Better Auth Microservice Architecture
+
+**Requirement**: Better Auth
+**Implementation**: Better Auth as separate Node.js microservice + FastAPI for RAG chatbot
+
+**Rationale**: After analyzing Better Auth documentation via Better Auth MCP server, confirmed that Better Auth can be deployed as a **standalone authentication microservice** that FastAPI consumes via JWT validation. This provides:
+
+1. **Proper separation of concerns**: Auth service handles authentication, FastAPI handles RAG chatbot
+2. **Meets original requirement**: Uses Better Auth as specified
+3. **Modern microservices architecture**: Each service has single responsibility
+4. **Better Auth advantages**:
+   - Native Neon PostgreSQL support (Kysely adapter)
+   - Built-in JWT with custom claims for user background
+   - Exposes REST API endpoints (`/api/auth/*`)
+   - Production-ready session management
+   - Secure password hashing (Argon2)
+5. **FastAPI integration**: Validates JWT tokens using Better Auth's JWKS endpoint, extracts user profile from JWT claims
+
+**Architecture**: Better Auth (Node.js) ↔ Neon PostgreSQL | Frontend ↔ Better Auth (signup/signin) | Frontend ↔ FastAPI (chat, sends JWT) | FastAPI validates JWT → personalizes responses
 
 ## Clarifications
 
@@ -14,6 +46,25 @@
 - Q: How should the system handle session expiration when a user is actively using the chat widget? → A: Allow current message to be typed; show re-authentication prompt when user tries to send; preserve typed message after re-login
 - Q: What should the default session duration be for authenticated users? → A: 7 days - users must re-authenticate weekly
 - Q: What specific input format should be used for collecting programming experience? → A: Dropdown with predefined ranges - "0-2 years", "3-5 years", "6-10 years", "10+ years"
+
+### Session 2025-12-17
+
+- Q: What are the password strength requirements beyond minimum 8 characters? → A: Better Auth library handles all password validation using default secure settings with Argon2 hashing
+- Q: What input format should be used for hardware access field - single-select dropdown or multi-select? → A: Single-select dropdown with mutually exclusive options: "None", "Simulation only", "Physical robots/sensors"
+- Q: How should the system handle invalid email formats? → A: Client-side validation shows instant error "Invalid email format" before submission + Better Auth server-side validation rejects with same error message if client validation bypassed
+- Q: How should the system handle network failures during authentication? → A: Show user-friendly error message "Connection failed. Please check your internet and try again." with retry button; no automatic retry
+- Q: How should the system handle very long or malformed input in background questions? → A: Enforce dropdown selection only (no free text input) - users cannot enter malformed data since all values are pre-defined options from dropdowns
+
+### Session 2025-12-25 (Architecture Update)
+
+- Q: Should we use FastAPI-Users or Better Auth as originally required? → A: Use Better Auth as a separate Node.js microservice; FastAPI validates JWT tokens
+- Q: How will FastAPI validate Better Auth tokens? → A: FastAPI uses PyJWT to validate JWT tokens against Better Auth's JWKS endpoint (RS256 asymmetric signing)
+- Q: Where will custom user background fields be stored? → A: JSONB metadata column in Better Auth user table, included as JWT custom claims for FastAPI access
+- Q: How will FastAPI access user background for personalization? → A: Custom fields extracted directly from JWT custom claims (no additional database query needed)
+- Q: How will Better Auth and FastAPI services be deployed? → A: Better Auth and FastAPI as separate Render services with cross-origin communication (auth.yourdomain.com and api.yourdomain.com)
+- Q: How should JWT access tokens be managed for session persistence and security? → A: Short-lived access tokens (15min) + refresh tokens (7 days) with automatic renewal
+- Q: How should the frontend handle scenarios when the Better Auth service is temporarily unavailable? → A: Display error banner "Authentication service temporarily unavailable. Please try again." with auto-retry after 30 seconds
+- Q: What CORS origin configuration should be used for Better Auth and FastAPI services in production? → A: Allow production domain and common subdomains pattern (e.g., *.yourdomain.com, docs.yourdomain.com)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -27,7 +78,7 @@ A new user visits the documentation site, wants to use the RAG chatbot, creates 
 
 **Acceptance Scenarios**:
 
-1. **Given** a guest user on the documentation site, **When** they click "Sign Up" on the chat widget, **Then** they see a registration form with email, password, and background questions
+1. **Given** a guest user on the documentation site, **When** they click "Sign Up" in the navbar header, **Then** they see a registration modal with email, password, and background questions
 2. **Given** a user on the signup form, **When** they fill in all required fields (email, password, years of programming experience, ROS 2 familiarity level, hardware access), **Then** their account is created and they are automatically signed in
 3. **Given** a newly registered beginner user (0-2 years experience, no ROS 2 knowledge), **When** they ask "What is ROS 2?", **Then** the chatbot response uses simple language, step-by-step explanations, and avoids jargon
 4. **Given** a newly registered expert user (5+ years experience, advanced ROS 2 knowledge), **When** they ask "What is ROS 2?", **Then** the chatbot response uses technical terminology, focuses on advanced concepts, and provides in-depth details
@@ -44,10 +95,10 @@ A registered user returns to the documentation site, signs in with their existin
 
 **Acceptance Scenarios**:
 
-1. **Given** an existing registered user, **When** they click "Sign In" on the chat widget, **Then** they see a login form with email and password fields
-2. **Given** a user on the signin form, **When** they enter correct credentials and submit, **Then** they are authenticated and the chat widget opens
+1. **Given** an existing registered user, **When** they click "Sign In" in the navbar header, **Then** they see a login modal with email and password fields
+2. **Given** a user on the signin modal, **When** they enter correct credentials and submit, **Then** they are authenticated, the modal closes, and the navbar displays their email with a Sign Out button
 3. **Given** an authenticated user with a saved background profile, **When** they ask any question to the RAG chatbot, **Then** the response is personalized based on their stored expertise level and hardware context
-4. **Given** an authenticated user, **When** they close and reopen the browser (session persistence), **Then** they remain signed in and chatbot personalization continues
+4. **Given** an authenticated user, **When** they close and reopen the browser within 7 days (refresh token persistence), **Then** they remain signed in (navbar shows email + Sign Out) and chatbot personalization continues
 
 ---
 
@@ -61,57 +112,65 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 **Acceptance Scenarios**:
 
-1. **Given** a guest user (not signed in), **When** they try to open the chat widget, **Then** they see a message "Please sign in to use the personalized chat" with Sign In and Sign Up buttons
-2. **Given** a guest user viewing the sign-in prompt, **When** they click "Sign Up", **Then** they are taken to the registration flow (User Story 1)
-3. **Given** a guest user viewing the sign-in prompt, **When** they click "Sign In", **Then** they are taken to the login flow (User Story 2)
+1. **Given** a guest user (not signed in), **When** they try to open the chat widget, **Then** they see a message "Please sign in to use the personalized chat" with Sign In and Sign Up buttons (which trigger the navbar auth modals)
+2. **Given** a guest user viewing the sign-in prompt in chat widget, **When** they click "Sign Up", **Then** the signup modal opens (User Story 1)
+3. **Given** a guest user viewing the sign-in prompt in chat widget, **When** they click "Sign In", **Then** the signin modal opens (User Story 2)
+4. **Given** a guest user on the site, **When** they click "Sign In" or "Sign Up" in the navbar, **Then** the corresponding auth modal opens
 
 ---
 
 ### Edge Cases
 
 - When a user enters an already-registered email during signup, the system displays error message "Email already registered. Try signing in instead." with a clickable link to the sign-in form
-- How does the system handle invalid email formats?
-- What happens if a user forgets their password?
+- When a user enters an invalid email format, client-side validation shows instant error "Invalid email format"; server-side validation also rejects if client validation is bypassed
+- Password reset/forgot password is out of scope for this phase
 - All background questions are required; users cannot submit signup form without completing all fields (programming experience, ROS 2 familiarity, hardware access)
-- When the Better Auth session expires during an active chat, the system allows the user to continue typing their current message; when the user attempts to send, a re-authentication prompt appears; after successful re-login, the typed message is preserved and can be sent
-- How does the system handle network failures during authentication?
-- What happens if a user updates their background profile after registration?
-- How does the system handle very long or malformed input in background questions?
+- When the Better Auth refresh token expires (after 7 days) during an active chat, the system allows the user to continue typing their current message; when the user attempts to send, a re-authentication prompt appears; after successful re-login, the typed message is preserved and can be sent; access token expiration (15 minutes) is handled automatically via silent token renewal
+- When network failures occur during authentication (signup/signin), the system shows user-friendly error message "Connection failed. Please check your internet and try again." with a retry button (no automatic retry)
+- When Better Auth service is temporarily unavailable or unreachable, the system displays error banner "Authentication service temporarily unavailable. Please try again." and automatically retries connection every 30 seconds until service is reachable or user dismisses banner
+- User profile editing after registration is out of scope for this phase
+- Background questions use dropdown selection only (no free text input), preventing malformed or overly long data entry since all values are pre-defined options
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: System MUST provide a signup form accessible from the chat widget that collects email, password, and custom background questions
-- **FR-002**: System MUST collect the following background information during signup:
+- **FR-002**: System MUST collect the following background information during signup using dropdown fields only (no free text input to prevent malformed data):
   - Years of programming experience (dropdown with options: "0-2 years", "3-5 years", "6-10 years", "10+ years")
   - Familiarity with ROS 2 (dropdown with options: "None", "Beginner", "Intermediate", "Advanced")
-  - Hardware access (dropdown or multi-select with options for robots, sensors, or "Simulation-only")
+  - Hardware access (single-select dropdown with options: "None", "Simulation only", "Physical robots/sensors")
 - **FR-002a**: System MUST require all background questions to be answered; signup form cannot be submitted until all fields (email, password, programming experience, ROS 2 familiarity, hardware access) are completed
-- **FR-003**: System MUST validate email addresses for correct format before account creation
-- **FR-004**: System MUST securely hash and store passwords using Better Auth's authentication mechanisms
-- **FR-005**: System MUST store user background information in Better Auth user profile/metadata associated with the authenticated user account
+- **FR-003**: System MUST validate email addresses for correct format using both client-side validation (instant feedback with error message "Invalid email format") and server-side validation (reject if client validation bypassed) before account creation
+- **FR-003a**: System MUST use FastAPI-Users' default password validation rules with Argon2 hashing (strength requirements, minimum length, complexity) for all password inputs during signup and signin
+- **FR-004**: System MUST securely hash and store passwords using FastAPI-Users' Argon2 hashing mechanism
+- **FR-005**: System MUST store user background information in user profile metadata (JSONB field) associated with the authenticated user account
 - **FR-006**: System MUST provide a signin form accessible from the chat widget that accepts email and password
-- **FR-007**: System MUST authenticate users using Better Auth and establish a session
+- **FR-007**: System MUST authenticate users using FastAPI-Users and establish a JWT-based session
 - **FR-008**: System MUST restrict chat widget functionality to authenticated users only
 - **FR-009**: System MUST display "Please sign in to use the chat" message to unauthenticated users attempting to access the chat widget
 - **FR-010**: System MUST fetch the authenticated user's background information before each chat request
-- **FR-011**: System MUST dynamically adjust the RAG agent's system prompt based on user background information retrieved from Better Auth
+- **FR-011**: System MUST dynamically adjust the RAG agent's system prompt based on user background information retrieved from user metadata
 - **FR-012**: RAG agent personalization MUST adapt response complexity based on programming experience level (e.g., beginner → simple explanations, expert → technical depth)
 - **FR-013**: RAG agent personalization MUST adapt ROS 2 explanations based on familiarity level (e.g., none → foundational concepts, advanced → advanced features)
-- **FR-014**: RAG agent personalization MUST reference user's hardware context when relevant (e.g., simulation-only users get simulation-focused guidance)
-- **FR-015**: System MUST maintain session persistence using Better Auth's session management with a default session duration of 7 days
-- **FR-016**: System MUST handle session expiration gracefully by allowing users to continue typing their current message, displaying a re-authentication prompt when attempting to send, and preserving the typed message after successful re-login
+- **FR-014**: RAG agent personalization MUST reference user's hardware context when relevant (e.g., "Simulation only" users get simulation-focused guidance, "Physical robots/sensors" users get hardware-specific advice, "None" users get general conceptual explanations)
+- **FR-015**: System MUST implement JWT-based authentication with short-lived access tokens (15 minutes expiration) and long-lived refresh tokens (7 days expiration); system MUST automatically renew access tokens using refresh token before expiration without user interaction
+- **FR-016**: System MUST handle refresh token expiration (7 days) gracefully by allowing users to continue typing their current message, displaying a re-authentication prompt when attempting to send, and preserving the typed message after successful re-login; access token expiration (15 minutes) MUST be handled silently via automatic renewal
 - **FR-017**: System MUST prevent duplicate email registrations by checking existing accounts before creation and display error message "Email already registered. Try signing in instead." with a clickable link redirecting to the sign-in form
 - **FR-018**: System MUST provide clear error messages for authentication failures (e.g., incorrect password, email not found)
+- **FR-018a**: System MUST handle network failures during authentication operations by displaying user-friendly error message "Connection failed. Please check your internet and try again." with a retry button (no automatic retry attempts)
+- **FR-018b**: System MUST handle Better Auth service unavailability by displaying error banner "Authentication service temporarily unavailable. Please try again." and automatically retry connection after 30 seconds; retry attempts continue until service is reachable or user dismisses banner
+- **FR-019**: System MUST use Neon PostgreSQL database configured via DATABASE_URL environment variable from .env file for all authentication data storage (users, sessions, background profiles)
 
 ### Key Entities *(include if feature involves data)*
 
-- **User Account**: Represents an authenticated user with email, hashed password, and unique identifier managed by Better Auth
-- **User Background Profile**: Contains expertise metadata including programming experience level, ROS 2 familiarity, and hardware access information; stored in Better Auth user metadata
-- **Session**: Represents an authenticated user's active session managed by Better Auth, with expiration and refresh capabilities
-- **Chat Message**: Represents a user's query to the RAG chatbot, associated with the authenticated user and their background context
-- **Personalized Response**: Represents the RAG agent's response, generated with system prompt dynamically adjusted based on user background
+- **User Account**: Represents an authenticated user with email, hashed password (Argon2), unique identifier, and metadata JSONB column managed by Better Auth; stored in Neon PostgreSQL
+- **User Background Profile**: Contains expertise metadata (programming_experience, ros2_familiarity, hardware_access); stored in user.metadata JSONB field in Better Auth database
+- **JWT Access Token**: Short-lived (15 minutes) stateless authentication token issued by Better Auth containing standard claims (sub, email, exp) plus custom claims namespace with user background fields; validated by FastAPI using JWKS; automatically renewed via refresh token
+- **Refresh Token**: Long-lived (7 days) secure token stored by Better Auth for automatic access token renewal; rotated on each use; invalidated on signout
+- **JWT Custom Claims**: Namespace containing user background (e.g., `https://yourdomain.com/claims: { programming_experience, ros2_familiarity, hardware_access }`); included in token by Better Auth during signin
+- **Chat Message**: Represents a user's query to the RAG chatbot, sent with JWT Authorization header
+- **Personalized Response**: RAG agent's response, generated with system prompt dynamically adjusted based on background extracted from JWT claims
 
 ## Success Criteria *(mandatory)*
 
@@ -130,11 +189,11 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 ### In Scope
 
-- User signup with email/password authentication via Better Auth
+- User signup with email/password authentication via FastAPI-Users
 - Collection of custom background questions during signup (programming experience, ROS 2 familiarity, hardware access)
-- Storage of user background in Better Auth user metadata
+- Storage of user background in user metadata JSONB field
 - User signin with email/password authentication
-- Session management using Better Auth sessions
+- JWT-based session management using FastAPI-Users
 - Chat widget access restriction to authenticated users only
 - Dynamic RAG agent system prompt adjustment based on user background
 - Personalized chatbot responses reflecting user expertise level
@@ -143,47 +202,62 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 ### Out of Scope
 
-- Password reset/forgot password functionality (can be added in future iteration)
-- Social login (OAuth providers like Google, GitHub) (can be added in future iteration)
+- **Password reset/forgot password functionality** - explicitly not required for this phase
+- **Social login** (OAuth providers like Google, GitHub) - explicitly not required
+- **Email verification** during signup - explicitly not required
+- **Multi-factor authentication (MFA)** - explicitly not required
+- **Role-based access control (RBAC)** - explicitly not required
+- **Chat history persistence** - handled separately in another feature
 - User profile editing after registration (can be added in future iteration)
-- Email verification during signup (can be added in future iteration)
-- Multi-factor authentication (MFA) (can be added in future iteration)
 - Admin panel for user management (can be added in future iteration)
 - Analytics tracking of personalization effectiveness (can be added in future iteration)
 - A/B testing of different personalization strategies (can be added in future iteration)
 
 ## Assumptions *(mandatory)*
 
-- Better Auth library is compatible with the existing FastAPI backend and Docusaurus frontend
+- FastAPI-Users library is compatible with the existing FastAPI backend
 - The existing RAG agent (docs_agent) supports dynamic system prompt modification
-- SQLite database is sufficient for hackathon demonstration purposes
+- Neon PostgreSQL database is already configured and accessible via DATABASE_URL in .env file
+- DATABASE_URL environment variable is properly configured with valid Neon PostgreSQL connection string
+- FastAPI-Users supports Neon PostgreSQL via SQLAlchemy async adapter
 - User background questions will be displayed as dropdown fields in the signup UI
-- Session duration is set to 7 days; users must re-authenticate weekly
+- Refresh token duration is set to 7 days; access tokens expire after 15 minutes with automatic renewal; users must re-authenticate weekly when refresh token expires
 - The existing chat widget UI can be extended to include authentication UI elements
 - Network connectivity is stable during authentication flows
 - Users will provide truthful background information (no verification against actual skill level)
 - The personalization logic will be implemented in the RAG agent layer, not in Better Auth itself
 - Programming experience ranges ("0-2 years", "3-5 years", "6-10 years", "10+ years") map to expertise levels for personalization (0-2 = beginner, 3-5 = intermediate, 6-10 = advanced, 10+ = expert)
+- Render free tier supports Neon PostgreSQL connections and Better Auth deployment
 
 ## Dependencies *(mandatory)*
 
-- Better Auth library (external dependency, must be installed and configured)
-- Existing FastAPI backend with uv environment (must support Better Auth integration)
-- Existing Docusaurus frontend with React components (must support authentication UI)
-- Existing RAG agent (docs_agent) (must support dynamic system prompt injection)
-- SQLite database (for Better Auth user and session storage)
-- Context7 MCP server for retrieving Better Auth documentation and integration examples
+- **Better Auth** (Node.js library, runs as separate microservice)
+- **Node.js 18+** runtime for Better Auth service
+- **Neon PostgreSQL** database (via DATABASE_URL, shared between Better Auth and FastAPI)
+- **Existing FastAPI backend** with uv environment (validates JWT via PyJWT)
+- **Existing Docusaurus frontend** with React components (integrates Better Auth client SDK)
+- **Existing RAG agent** (docs_agent) (supports dynamic system prompt injection)
+- **Better Auth MCP server** for documentation and integration examples
+- **PyJWT[crypto]** library for FastAPI JWT validation (RS256 support)
 
 ## Constraints *(mandatory)*
 
-- Must use Better Auth as the authentication library (requirement specified in user input)
-- Must integrate with existing FastAPI backend without major architectural changes
-- Must integrate with existing Docusaurus frontend without disrupting current documentation site functionality
-- Must use SQLite for hackathon (production can migrate to PostgreSQL/MySQL later)
+- Must use Better Auth as the authentication library (original requirement)
+- Better Auth runs as **separate Node.js microservice**, not embedded in FastAPI
+- **Deployment**: Better Auth and FastAPI deployed as **separate Render services** with distinct URLs (e.g., auth.yourdomain.com and api.yourdomain.com)
+- **CORS Configuration**: Both services must configure CORS to allow cross-origin requests from production domain and subdomains (e.g., *.yourdomain.com, docs.yourdomain.com); localhost origins allowed only in development environment
+- **Shared Database**: Both services connect to same Neon PostgreSQL instance via DATABASE_URL
+- FastAPI validates JWT tokens but does NOT handle authentication logic directly
+- Must replace current in-memory session management with JWT-based authentication
+- Must be deployable on Render free tier (no features requiring paid infrastructure)
 - Must not expose sensitive user data (passwords, email) in chat logs or RAG agent context
-- Background questions must be answered during signup only (not iteratively updated during this phase)
-- Personalization must be transparent to users (they should understand why responses differ)
-- Authentication UI must be accessible from the existing chat widget interface
+- Must keep existing RAG agent (docs_agent) functionality unchanged - only add personalization layer
+- Background questions answered during signup only (not iteratively updated this phase)
+- Personalization must be transparent to users
+- Authentication UI accessible from navbar Sign In/Sign Up buttons (triggers modals)
+- Frontend calls Better Auth REST API at auth service URL for signup/signin
+- Frontend sends JWT to FastAPI at API service URL in Authorization header
+- FastAPI validates tokens via Better Auth JWKS endpoint (cross-service communication)
 
 ## Non-Functional Requirements *(optional - include if relevant)*
 
@@ -195,8 +269,10 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 ### Security
 
-- Passwords must be hashed using Better Auth's secure hashing mechanisms (bcrypt or Argon2)
-- Session tokens must be cryptographically secure and unpredictable
+- Passwords must be validated using Better Auth's default password strength requirements and hashed using Argon2 (secure, modern hashing algorithm)
+- Access tokens (15 min) and refresh tokens (7 days) must be cryptographically secure and unpredictable; refresh tokens must be rotated on each use
+- JWT tokens must use RS256 asymmetric signing with Better Auth managing private keys and FastAPI validating via JWKS public keys
+- CORS must be configured to allow only production domain and subdomains (*.yourdomain.com); wildcard origins (*) must never be used in production to prevent CSRF attacks
 - User background data must not be exposed in client-side logs or network responses outside authenticated contexts
 - SQL injection and XSS vulnerabilities must be prevented through parameterized queries and input sanitization
 
@@ -210,16 +286,18 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 ### Reliability
 
 - Authentication service must handle concurrent signup/signin requests without race conditions
-- Session persistence must survive server restarts (sessions stored in database, not in-memory)
+- JWT tokens remain valid across server restarts (stateless authentication)
 - Failed authentication attempts must not crash the application or expose stack traces to users
+- System must gracefully handle Neon PostgreSQL database unavailability and display user-friendly error messages
+- Frontend must handle Better Auth service unavailability with error banner and automatic reconnection attempts every 30 seconds
 
 ## Risks & Mitigations *(optional - include if relevant)*
 
-### Risk 1: Better Auth Integration Complexity
+### Risk 1: FastAPI-Users Integration Complexity
 
-**Description**: Better Auth may require complex configuration or be incompatible with FastAPI/Docusaurus setup.
+**Description**: FastAPI-Users may require complex configuration with async SQLAlchemy and Neon PostgreSQL.
 
-**Mitigation**: Use Context7 MCP server to retrieve official Better Auth documentation and integration examples before implementation. Start with minimal configuration and expand incrementally.
+**Mitigation**: Follow official FastAPI-Users documentation for async database adapters. Use asyncpg driver for optimal Neon PostgreSQL compatibility. Start with minimal configuration and expand incrementally.
 
 ### Risk 2: Personalization Not Noticeable
 
@@ -233,11 +311,17 @@ A guest user (not authenticated) visits the documentation site and attempts to u
 
 **Mitigation**: Accept this as a known limitation for MVP. In future iterations, adaptive personalization could adjust based on user interaction patterns. For now, trust user self-reporting.
 
-### Risk 4: Session Management Conflicts
+### Risk 4: Session Management Migration Conflicts
 
-**Description**: Better Auth session management may conflict with existing in-memory session handling in the current system.
+**Description**: Replacing existing in-memory session management with JWT-based sessions may cause conflicts or break existing functionality that depends on the current session structure.
 
-**Mitigation**: Fully replace in-memory sessions with Better Auth sessions. Ensure all endpoints use Better Auth session validation. Test session expiration and refresh flows thoroughly.
+**Mitigation**: Fully replace in-memory sessions with JWT-based authentication. Audit all endpoints that currently use session data and update them to use JWT validation middleware. Create comprehensive test cases for session creation, validation, expiration, and refresh flows. Test with both new and existing chat functionality to ensure no regressions.
+
+### Risk 5: Neon PostgreSQL and Render Free Tier Limitations
+
+**Description**: Neon PostgreSQL free tier may have connection limits, storage limits, or performance constraints that impact authentication performance. Render free tier may have deployment limitations that affect FastAPI-Users or database connectivity.
+
+**Mitigation**: Review Neon PostgreSQL free tier limits (connections, storage, queries) before implementation. Implement connection pooling to minimize database connections. Monitor database usage during testing. Verify FastAPI-Users works on Render free tier with Neon PostgreSQL by testing deployment early in development cycle. Have fallback plan to upgrade to paid tier if free tier proves insufficient.
 
 ## Open Questions *(optional - include if relevant)*
 

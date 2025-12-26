@@ -1,3 +1,8 @@
+
+
+
+
+
 # RAG Chatbot with ChatKit - Complete Implementation Guide
 
 A production-ready RAG (Retrieval-Augmented Generation) chatbot with OpenAI ChatKit UI, Neon Postgres persistence, and advanced features.

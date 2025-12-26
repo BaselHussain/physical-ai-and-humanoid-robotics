@@ -79,3 +79,16 @@ install/
 build/
 # Claude Code configuration (contains secrets)
 .claude.json
+
+# Python egg info
+*.egg-info/
+
+# Frontend (if exists)
+.next/
+.docusaurus/
+.cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3

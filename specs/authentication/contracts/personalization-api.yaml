@@ -1,0 +1,225 @@
+openapi: 3.0.3
+info:
+  title: RAG Chatbot Personalization API
+  description: Enhanced chat API with authentication and personalized RAG agent responses based on user background
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.yourdomain.com
+    description: Production
+
+tags:
+  - name: Chat
+    description: Personalized chatbot operations
+
+paths:
+  /chat/message:
+    post:
+      tags:
+        - Chat
+      summary: Send chat message and receive personalized response
+      description: |
+        Send a user question to the RAG chatbot. Requires authentication.
+        System fetches user background, adjusts RAG agent system prompt dynamically,
+        and returns personalized response based on expertise level (FR-010, FR-011, FR-012, FR-013, FR-014).
+
+        Personalization rules:
+        - **Beginner** (0-2 years prog, ROS2=None/Beginner): Simple language, step-by-step, avoid jargon
+        - **Intermediate** (3-10 years, ROS2=Intermediate): Balanced technical depth
+        - **Advanced** (10+ years, ROS2=Advanced): Technical terms, in-depth details, code-heavy
+
+        Hardware context:
+        - **None**: General conceptual explanations
+        - **Simulation only**: Simulation-focused guidance
+        - **Physical robots/sensors**: Hardware-specific advice
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            example:
+              message: "What is ROS 2?"
+      responses:
+        '200':
+          description: Personalized response generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                beginnerResponse:
+                  summary: Response for beginner user
+                  value:
+                    response: |
+                      ROS 2 (Robot Operating System 2) is a software framework that helps you build robot applications.
+                      Think of it as a collection of tools and libraries that make it easier to program robots.
+
+                      Key concepts:
+                      1. **Nodes**: Individual programs that do specific tasks (like reading sensor data)
+                      2. **Topics**: Channels where nodes can share information
+                      3. **Messages**: The actual data being shared between nodes
+
+                      To get started, you'll want to install ROS 2 on your computer and try some basic tutorials.
+                    personalized: true
+                    expertise_level: "beginner"
+                    response_time_ms: 2345
+                advancedResponse:
+                  summary: Response for advanced user
+                  value:
+                    response: |
+                      ROS 2 is the next-generation Robot Operating System, featuring a DDS-based middleware architecture
+                      that provides real-time communication, improved security, and cross-platform support.
+
+                      Key improvements over ROS 1:
+                      - **DDS middleware**: QoS policies, type introspection, security features (SROS2)
+                      - **Real-time support**: rclcpp executor with C++14/17, deterministic scheduling
+                      - **Multi-platform**: Native Windows, macOS support; embedded Linux (ROS 2 Humble)
+                      - **Component-based architecture**: Intra-process communication, composable nodes
+
+                      Example publisher node (rclcpp):
+                      ```cpp
+                      auto publisher = node->create_publisher<std_msgs::msg::String>("topic", 10);
+                      publisher->publish(msg);
+                      ```
+
+                      For physical robot integration, consider Nav2 for navigation, MoveIt2 for manipulation,
+                      and isaac_ros for NVIDIA hardware acceleration.
+                    personalized: true
+                    expertise_level: "advanced"
+                    response_time_ms: 3120
+        '401':
+          description: Session expired or invalid (user must re-authenticate)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Session expired"
+                code: "SESSION_EXPIRED"
+                preserve_message: true
+        '403':
+          description: Forbidden (guest user, not authenticated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Please sign in to use the chat"
+                code: "AUTHENTICATION_REQUIRED"
+        '500':
+          description: Server error (background fetch failed, RAG agent unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                backgroundFetchFailed:
+                  summary: Background profile fetch failed (fallback to default personalization)
+                  value:
+                    response: "[RAG response using default intermediate personalization]"
+                    personalized: false
+                    expertise_level: "default_intermediate"
+                    warning: "Using default personalization due to temporary error"
+                ragAgentUnavailable:
+                  summary: RAG agent service unavailable
+                  value:
+                    error: "Chat service temporarily unavailable. Please try again in a moment."
+                    code: "SERVICE_UNAVAILABLE"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Session token from authentication API
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: User's question or chat input
+          minLength: 1
+          maxLength: 5000
+          example: "What is ROS 2?"
+        context:
+          type: object
+          description: Optional additional context (reserved for future use)
+          properties:
+            conversation_id:
+              type: string
+              format: uuid
+              description: Conversation ID for multi-turn chat (future feature)
+
+    ChatResponse:
+      type: object
+      properties:
+        response:
+          type: string
+          description: Personalized RAG agent response
+          example: "ROS 2 is a software framework..."
+        personalized:
+          type: boolean
+          description: Whether response was personalized based on user background
+          example: true
+        expertise_level:
+          type: string
+          enum: ["beginner", "intermediate", "advanced", "default_intermediate"]
+          description: Derived expertise level used for personalization
+          example: "intermediate"
+        response_time_ms:
+          type: integer
+          description: Total response generation time in milliseconds
+          example: 2500
+        sources:
+          type: array
+          description: Source documents used by RAG agent (optional, for transparency)
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+                example: "ROS 2 Documentation: Getting Started"
+              url:
+                type: string
+                format: uri
+                example: "https://docs.ros.org/en/humble/Tutorials.html"
+              relevance_score:
+                type: number
+                format: float
+                example: 0.92
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Session expired"
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - SESSION_EXPIRED
+            - AUTHENTICATION_REQUIRED
+            - SERVICE_UNAVAILABLE
+            - INVALID_REQUEST
+          example: "SESSION_EXPIRED"
+        preserve_message:
+          type: boolean
+          description: Client should preserve typed message for re-authentication (session expiration only)
+          example: true
+        warning:
+          type: string
+          description: Optional warning message (for degraded mode, e.g., default personalization)
+          example: "Using default personalization due to temporary error"

@@ -4,6 +4,7 @@ import type LayoutType from '@theme/Layout';
 import type {WrapperProps} from '@docusaurus/types';
 import { ChatKitWidget } from '@site/src/components/ChatKitWidget';
 import { TextSelectionMenu } from '@site/src/components/TextSelectionMenu';
+import { AuthProvider } from '@site/src/components/Auth';
 
 type Props = WrapperProps<typeof LayoutType>;
 
@@ -23,13 +24,13 @@ export default function LayoutWrapper(props: Props): ReactNode {
   }, []);
 
   return (
-    <>
+    <AuthProvider>
       <Layout {...props} />
       <TextSelectionMenu onAskFromAI={handleAskFromAI} />
       <ChatKitWidget
         prePopulatedText={prePopulatedText}
         onClearPrePopulatedText={handleClearPrePopulatedText}
       />
-    </>
+    </AuthProvider>
   );
 }

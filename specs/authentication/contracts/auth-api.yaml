@@ -1,0 +1,368 @@
+openapi: 3.0.3
+info:
+  title: RAG Chatbot Authentication API
+  description: Better Auth authentication endpoints for user signup, signin, and session management
+  version: 1.0.0
+  contact:
+    name: Authentication Feature
+    url: https://github.com/your-repo/specs/authentication
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.yourdomain.com
+    description: Production (Render deployment)
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+
+paths:
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Create new user account with background profile
+      description: |
+        Register a new user with email/password and collect custom background questions
+        (programming experience, ROS 2 familiarity, hardware access). All fields required.
+        Returns session token for automatic signin after signup (FR-001, FR-002).
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            examples:
+              beginner:
+                summary: Beginner user signup
+                value:
+                  email: beginner@example.com
+                  password: SecurePass123!
+                  background:
+                    programming_experience: "0-2 years"
+                    ros2_familiarity: "None"
+                    hardware_access: "None"
+              advanced:
+                summary: Advanced user signup
+                value:
+                  email: advanced@example.com
+                  password: SecurePass123!
+                  background:
+                    programming_experience: "10+ years"
+                    ros2_familiarity: "Advanced"
+                    hardware_access: "Physical robots/sensors"
+      responses:
+        '201':
+          description: User created successfully, session established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          description: Validation error (invalid email, weak password, missing fields, duplicate email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  summary: Email already registered
+                  value:
+                    error: "Email already registered. Try signing in instead."
+                    code: "DUPLICATE_EMAIL"
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: "Invalid email format"
+                    code: "INVALID_EMAIL"
+                weakPassword:
+                  summary: Password doesn't meet requirements
+                  value:
+                    error: "Password does not meet security requirements"
+                    code: "WEAK_PASSWORD"
+        '500':
+          description: Server error (network failure, database unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                networkError:
+                  summary: Network failure
+                  value:
+                    error: "Connection failed. Please check your internet and try again."
+                    code: "NETWORK_ERROR"
+
+  /auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate existing user
+      description: |
+        Sign in with email and password. Returns session token with 7-day expiration (FR-006, FR-007, FR-015).
+      operationId: signin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+            example:
+              email: user@example.com
+              password: SecurePass123!
+      responses:
+        '200':
+          description: Authentication successful, session established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid email or password"
+                code: "INVALID_CREDENTIALS"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Connection failed. Please check your internet and try again."
+                code: "NETWORK_ERROR"
+
+  /auth/signout:
+    post:
+      tags:
+        - Authentication
+      summary: End user session
+      description: Invalidate current session token. Requires authentication.
+      operationId: signout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Session terminated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signed out successfully"
+        '401':
+          description: Unauthorized (invalid or expired session token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Unauthorized"
+                code: "UNAUTHORIZED"
+
+  /auth/session:
+    get:
+      tags:
+        - Authentication
+      summary: Validate current session
+      description: Check if session token is valid and not expired. Returns user info if valid.
+      operationId: validateSession
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Session valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: Session expired or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expired:
+                  summary: Session expired
+                  value:
+                    error: "Session expired"
+                    code: "SESSION_EXPIRED"
+                    preserve_message: true
+                invalid:
+                  summary: Invalid token
+                  value:
+                    error: "Invalid session token"
+                    code: "INVALID_TOKEN"
+
+  /auth/background/{user_id}:
+    get:
+      tags:
+        - Authentication
+      summary: Fetch user background profile
+      description: |
+        Retrieve background profile for personalization. Only accessible by authenticated user
+        for their own profile (FR-010).
+      operationId: getBackground
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID (must match authenticated user)
+      responses:
+        '200':
+          description: Background profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackgroundProfile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (user_id doesn't match authenticated user)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Forbidden: Cannot access another user's profile"
+                code: "FORBIDDEN"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Session token returned from /auth/signup or /auth/signin
+
+  schemas:
+    SignupRequest:
+      type: object
+      required:
+        - email
+        - password
+        - background
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address (unique, used for login)
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: Password (Better Auth validates strength)
+          minLength: 8
+          example: SecurePass123!
+        background:
+          $ref: '#/components/schemas/BackgroundProfile'
+
+    SigninRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+
+    BackgroundProfile:
+      type: object
+      required:
+        - programming_experience
+        - ros2_familiarity
+        - hardware_access
+      properties:
+        programming_experience:
+          type: string
+          enum: ["0-2 years", "3-5 years", "6-10 years", "10+ years"]
+          description: Years of programming experience
+          example: "6-10 years"
+        ros2_familiarity:
+          type: string
+          enum: ["None", "Beginner", "Intermediate", "Advanced"]
+          description: Familiarity with ROS 2 / robotics
+          example: "Intermediate"
+        hardware_access:
+          type: string
+          enum: ["None", "Simulation only", "Physical robots/sensors"]
+          description: Access to physical hardware
+          example: "Simulation only"
+
+    AuthSuccessResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Session token (store in httpOnly cookie or Authorization header)
+          example: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        user_id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        background:
+          $ref: '#/components/schemas/BackgroundProfile'
+        expires_at:
+          type: string
+          format: date-time
+          description: Session expiration timestamp (7 days from creation)
+          example: "2025-12-24T10:00:00Z"
+
+    SessionResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        expires_at:
+          type: string
+          format: date-time
+          example: "2025-12-24T10:00:00Z"
+        background:
+          $ref: '#/components/schemas/BackgroundProfile'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Invalid email format"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "INVALID_EMAIL"
+        preserve_message:
+          type: boolean
+          description: Client should preserve typed message (session expiration only)
+          example: true

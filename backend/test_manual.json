@@ -1,0 +1,9 @@
+{
+  "email": "live_test_12345@test.com",
+  "password": "TestPass123!",
+  "background": {
+    "programming_experience": "3-5 years",
+    "ros2_familiarity": "Intermediate",
+    "hardware_access": "Simulation only"
+  }
+}
