@@ -73,9 +73,9 @@ export function ChatKitWidget({ prePopulatedText, onClearPrePopulatedText }: Cha
         )}
         {authView === 'signup' && (
           <SignupForm
-            onSubmit={async (email, password, background) => {
+            onSubmit={async (email, password, name, background) => {
               try {
-                await signup(email, password, background);
+                await signup(email, password, name, background);
                 setAuthView('prompt'); // Reset view after successful signup
               } catch (error) {
                 // Error is handled in the form component

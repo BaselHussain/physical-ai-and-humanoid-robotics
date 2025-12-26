@@ -97,13 +97,11 @@ def retrieve_relevant_chunks(query: str, top_k: int = 5) -> List[Dict[str, Any]]
         return []
 
 
-# The main agent instance for use in the application with proper tool integration
-docs_agent = Agent(
-    name="DocsRAGAgent",
-    model=model,
-    tools=[retrieve_relevant_chunks],  # Add the retrieval function as a tool using the proper syntax
-instructions="""
+# Base system prompt template
+BASE_INSTRUCTIONS = """
 You are an expert tutor for the **Physical AI & Humanoid Robotics** book. Provide clear, concise answers in a well-structured format.
+
+{personalization}
 
 Your answers must be:
 - Clean, readable text with clear formatting indicators
@@ -144,6 +142,32 @@ Total: 28–38 DOF
 - Isaac Sim Humanoids
 
 Now answer the user's question using only the retrieved content. Focus on creating a human-readable response that doesn't include technical file paths or JSON formatting. The markdown symbols are needed for proper formatting in the web interface.
-""",
-)
+"""
+
+
+def create_personalized_agent(personalization_prefix: str = "") -> Agent:
+    """
+    Create a RAG agent instance with personalized instructions.
+
+    Args:
+        personalization_prefix: Personalization prefix to add to system prompt
+
+    Returns:
+        Configured Agent instance
+    """
+    # Insert personalization prefix into base instructions
+    instructions = BASE_INSTRUCTIONS.format(
+        personalization=personalization_prefix if personalization_prefix else "Tailor your explanations to the user's expertise level."
+    )
+
+    return Agent(
+        name="DocsRAGAgent",
+        model=model,
+        tools=[retrieve_relevant_chunks],
+        instructions=instructions,
+    )
+
+
+# Default agent instance (for backward compatibility)
+docs_agent = create_personalized_agent()
 
