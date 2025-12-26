@@ -48,13 +48,13 @@ export function ChatKitWidget({ prePopulatedText, onClearPrePopulatedText }: Cha
     return null;
   }
 
-  // Don't render anything if not authenticated or still loading
-  // Auth UI is handled in the navbar
-  if (authLoading || !isAuthenticated) {
-    return null;
-  }
+  // TEMPORARY: Disable auth check to allow chat widget for everyone
+  // TODO: Re-enable authentication once navbar auth is working
+  // if (authLoading || !isAuthenticated) {
+  //   return null;
+  // }
 
-  // User is authenticated - proceed with chat widget rendering
+  // Proceed with chat widget rendering (auth temporarily disabled)
 
   if (error) {
     console.log('Showing error state');
