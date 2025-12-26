@@ -73,8 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(result.error.message || 'Signup failed');
       }
 
-      // Session is automatically managed by Better Auth
-      // The useSession hook will update automatically
+      // ✅ Auto-signin: Better Auth automatically creates a session after signup
+      // The user is now signed in - no need to call signin() separately
+      // The useSession hook will detect the new session and update isAuthenticated to true
     } catch (error) {
       console.error('Signup error:', error);
       throw error;

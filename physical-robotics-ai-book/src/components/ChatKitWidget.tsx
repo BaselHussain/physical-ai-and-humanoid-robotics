@@ -1,9 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './Auth';
-import AuthPrompt from './Auth/AuthPrompt';
-import SignupForm from './Auth/SignupForm';
-import SigninForm from './Auth/SigninForm';
 import styles from './ChatKitWidget.module.css';
 
 interface ChatKitWidgetProps {
@@ -16,10 +13,9 @@ export function ChatKitWidget({ prePopulatedText, onClearPrePopulatedText }: Cha
   const [ChatKitComponents, setChatKitComponents] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMinimized, setIsMinimized] = useState(true); // Start minimized
-  const [authView, setAuthView] = useState<'prompt' | 'signup' | 'signin'>('prompt');
 
   // Get authentication state
-  const { isAuthenticated, isLoading: authLoading, signup, signin } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     console.log('ChatKitWidget mounted');
@@ -52,56 +48,10 @@ export function ChatKitWidget({ prePopulatedText, onClearPrePopulatedText }: Cha
     return null;
   }
 
-  // Show loading state while checking authentication
-  if (authLoading) {
-    return (
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, backgroundColor: '#4CAF50', color: 'white', padding: '20px', borderRadius: '8px' }}>
-        Checking authentication...
-      </div>
-    );
-  }
-
-  // Show authentication UI if user is not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
-        {authView === 'prompt' && (
-          <AuthPrompt
-            onSignup={() => setAuthView('signup')}
-            onSignin={() => setAuthView('signin')}
-            message="Please sign in to use the personalized chat"
-          />
-        )}
-        {authView === 'signup' && (
-          <SignupForm
-            onSubmit={async (email, password, name, background) => {
-              try {
-                await signup(email, password, name, background);
-                setAuthView('prompt'); // Reset view after successful signup
-              } catch (error) {
-                // Error is handled in the form component
-                throw error;
-              }
-            }}
-            onSwitchToSignin={() => setAuthView('signin')}
-          />
-        )}
-        {authView === 'signin' && (
-          <SigninForm
-            onSubmit={async (email, password) => {
-              try {
-                await signin(email, password);
-                setAuthView('prompt'); // Reset view after successful signin
-              } catch (error) {
-                // Error is handled in the form component
-                throw error;
-              }
-            }}
-            onSwitchToSignup={() => setAuthView('signup')}
-          />
-        )}
-      </div>
-    );
+  // Don't render anything if not authenticated or still loading
+  // Auth UI is handled in the navbar
+  if (authLoading || !isAuthenticated) {
+    return null;
   }
 
   // User is authenticated - proceed with chat widget rendering
