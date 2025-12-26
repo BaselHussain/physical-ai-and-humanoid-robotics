@@ -11,11 +11,25 @@ import { inferAdditionalFields } from 'better-auth/client/plugins';
 /**
  * Better Auth base URL
  * - Development: http://localhost:3000
- * - Production: Update with deployed Better Auth service URL
+ * - Production: https://better-auth-service-7g0h.onrender.com
  */
-const BETTER_AUTH_URL = typeof window !== 'undefined' && (window as any).REACT_APP_BETTER_AUTH_URL
-  ? (window as any).REACT_APP_BETTER_AUTH_URL
-  : 'http://localhost:3000';
+const getBetterAuthURL = (): string => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:3000';
+  }
+
+  const hostname = window.location.hostname;
+
+  // Production: deployed on GitHub Pages or custom domain
+  if (hostname === 'baselhussain.github.io' || hostname === 'physical-ai-docs.com') {
+    return 'https://better-auth-service-7g0h.onrender.com';
+  }
+
+  // Development: localhost
+  return 'http://localhost:3000';
+};
+
+const BETTER_AUTH_URL = getBetterAuthURL();
 
 /**
  * Create and export Better Auth client instance
