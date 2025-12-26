@@ -1,6 +1,6 @@
 import cohere
 from qdrant_client import QdrantClient
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from agents import Runner
@@ -14,7 +14,7 @@ import sys
 # Check if we're running as a package (from root) or directly (from backend dir)
 if __package__:
     # Running as package from root: uvicorn backend.main:app
-    from .app.rag_agent import docs_agent
+    from .app.rag_agent import docs_agent, create_personalized_agent
     from .app.session_manager import create_session, get_session, add_message
     from .models.chat import ChatRequest, SessionResponse
     from .app.chatkit_server import RAGChatKitServer
@@ -25,7 +25,7 @@ if __package__:
     from .src.auth.config import engine as auth_engine
 else:
     # Running from backend directory: uvicorn main:app
-    from app.rag_agent import docs_agent
+    from app.rag_agent import docs_agent, create_personalized_agent
     from app.session_manager import create_session, get_session, add_message
     from models.chat import ChatRequest, SessionResponse
     from app.chatkit_server import RAGChatKitServer
@@ -36,6 +36,16 @@ else:
     from src.auth.config import engine as auth_engine
 
 from chatkit.server import StreamingResult
+
+# Import JWT authentication (Better Auth integration)
+if __package__:
+    from .src.auth.jwt_middleware import require_jwt_auth, get_optional_jwt
+    from .src.auth.claims_extractor import extract_background_profile, extract_all_user_info
+    from .src.auth.personalization import map_background_to_expertise, generate_system_prompt_prefix
+else:
+    from src.auth.jwt_middleware import require_jwt_auth, get_optional_jwt
+    from src.auth.claims_extractor import extract_background_profile, extract_all_user_info
+    from src.auth.personalization import map_background_to_expertise, generate_system_prompt_prefix
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,9 +71,16 @@ app = FastAPI(title="RAG Chatbot API with Authentication")
 app.include_router(auth_router)
 
 # Enable CORS for local development and production
+# Supports wildcard subdomains and localhost
+import os
+cors_origins = os.getenv(
+    'CORS_ORIGINS',
+    'http://localhost:3000,http://localhost:3001,https://baselhussain.github.io,https://yourdomain.com'
+).split(',')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "https://baselhussain.github.io"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -139,11 +156,31 @@ async def create_session_endpoint():
 
 
 @app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
-    """Handle chat requests with streaming SSE response - enhanced with proper RAG"""
+async def chat_endpoint(
+    request: ChatRequest,
+    jwt_payload: dict = Depends(require_jwt_auth)
+):
+    """
+    Handle chat requests with streaming SSE response - enhanced with proper RAG.
+
+    Requires JWT authentication from Better Auth.
+    Personalizes responses based on user background profile from JWT custom claims.
+    """
     session = get_session(request.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
+    # Extract user info and background from JWT
+    user_info = extract_all_user_info(jwt_payload)
+    background_profile = user_info.get('background')
+
+    # Log authentication and personalization status
+    logger.info(f"Authenticated user: {user_info.get('email')} (ID: {user_info.get('user_id')})")
+    if background_profile:
+        expertise_level = map_background_to_expertise(background_profile)
+        logger.info(f"User background: {expertise_level} (prog={background_profile.programming_experience}, ros2={background_profile.ros2_familiarity})")
+    else:
+        logger.info("No background profile in JWT - using default personalization")
 
     # Add user message to in-memory session (existing functionality)
     add_message(request.session_id, "user", request.message)
@@ -160,11 +197,19 @@ async def chat_endpoint(request: ChatRequest):
     except Exception as e:
         logger.error(f"⚠️ Failed to save user message to database: {e}")
 
+    # Generate personalized system prompt prefix based on user background
+    personalization_prefix = generate_personalized_system_prompt(background_profile)
+    logger.info(f"Using personalized system prompt: {personalization_prefix[:80]}...")
+
+    # Create personalized agent instance
+    personalized_agent = create_personalized_agent(personalization_prefix)
+
     async def generate():
         try:
-            # Use the streaming runner with our RAG-enabled docs_agent
+            # Use the streaming runner with our personalized RAG-enabled agent
             # The agent will automatically retrieve relevant documentation before responding
-            result = Runner.run_streamed(docs_agent, input=request.message)
+            # with personalization based on user's expertise level and hardware access
+            result = Runner.run_streamed(personalized_agent, input=request.message)
 
             assistant_content = ""
             has_content = False

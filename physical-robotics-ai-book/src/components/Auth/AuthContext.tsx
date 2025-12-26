@@ -3,253 +3,134 @@
  *
  * Global authentication state management for the application.
  * Provides signup, signin, signout functions and auth state to all components.
+ *
+ * Updated to use Better Auth client SDK for authentication.
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { authClient, useSession as useBetterAuthSession } from '../../lib/auth-client';
 
-// Backend API base URL (update for production)
-const API_BASE_URL = typeof window !== 'undefined' && (window as any).REACT_APP_API_URL
-  ? (window as any).REACT_APP_API_URL
-  : 'http://localhost:8000';
-
+/**
+ * Background profile for user personalization
+ * These fields are stored as custom fields in Better Auth
+ */
 interface BackgroundProfile {
   programming_experience: string;
   ros2_familiarity: string;
   hardware_access: string;
 }
 
-interface User {
-  id: number;
-  email: string;
-  background: BackgroundProfile;
-}
+/**
+ * Infer User and Session types from Better Auth client
+ * This ensures type safety with the Better Auth SDK
+ */
+type Session = typeof authClient.$Infer.Session;
+type User = Session['user'];
 
 interface AuthState {
   user: User | null;
-  token: string | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
 interface AuthContextValue extends AuthState {
-  signup: (email: string, password: string, background: BackgroundProfile) => Promise<void>;
+  signup: (email: string, password: string, name: string, background: BackgroundProfile) => Promise<void>;
   signin: (email: string, password: string) => Promise<void>;
-  signout: () => void;
+  signout: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// Local storage keys
-const TOKEN_KEY = 'rag_chatbot_token';
-const USER_KEY = 'rag_chatbot_user';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isLoading: true,
-  });
+  // Use Better Auth session hook for automatic session management
+  const sessionQuery = useBetterAuthSession();
 
-  // Initialize auth state from localStorage on mount
-  useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem(TOKEN_KEY);
-      const storedUser = localStorage.getItem(USER_KEY);
-
-      if (storedToken && storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-
-          // Validate token with backend
-          const isValid = await validateToken(storedToken);
-
-          if (isValid) {
-            setAuthState({
-              user,
-              token: storedToken,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          } else {
-            // Token invalid, clear storage
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_KEY);
-            setAuthState({
-              user: null,
-              token: null,
-              isAuthenticated: false,
-              isLoading: false,
-            });
-          }
-        } catch (error) {
-          console.error('Auth initialization error:', error);
-          setAuthState({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
-        }
-      } else {
-        setAuthState((prev) => ({ ...prev, isLoading: false }));
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  // Validate token with backend
-  const validateToken = async (token: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/session`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      return response.ok;
-    } catch (error) {
-      console.error('Token validation error:', error);
-      return false;
-    }
-  };
-
-  // Signup function
+  // Signup function - now uses Better Auth client
   const signup = async (
     email: string,
     password: string,
+    name: string,
     background: BackgroundProfile
   ): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          background,
-        }),
-      });
+      // Call Better Auth signup with additional fields
+      // Type assertion needed because Better Auth server has custom fields configured
+      // that aren't reflected in the client SDK types (separate project limitation)
+      const result = await authClient.signUp.email({
+        email,
+        password,
+        name,
+        // Additional fields from Better Auth server config
+        programming_experience: background.programming_experience,
+        ros2_familiarity: background.ros2_familiarity,
+        hardware_access: background.hardware_access,
+      } as any);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Signup failed');
+      // Check for errors
+      if (result.error) {
+        throw new Error(result.error.message || 'Signup failed');
       }
 
-      const data = await response.json();
-
-      // Store token and user info
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(
-        USER_KEY,
-        JSON.stringify({
-          id: data.user_id,
-          email,
-          background: data.background,
-        })
-      );
-
-      setAuthState({
-        user: {
-          id: data.user_id,
-          email,
-          background: data.background,
-        },
-        token: data.token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      // Session is automatically managed by Better Auth
+      // The useSession hook will update automatically
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
     }
   };
 
-  // Signin function
+  // Signin function - now uses Better Auth client
   const signin = async (email: string, password: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      // Call Better Auth signin
+      const result = await authClient.signIn.email({
+        email,
+        password,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Sign in failed');
+      // Check for errors
+      if (result.error) {
+        throw new Error(result.error.message || 'Sign in failed');
       }
 
-      const data = await response.json();
-
-      // Store token and user info
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(
-        USER_KEY,
-        JSON.stringify({
-          id: data.user_id,
-          email,
-          background: data.background,
-        })
-      );
-
-      setAuthState({
-        user: {
-          id: data.user_id,
-          email,
-          background: data.background,
-        },
-        token: data.token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      // Session is automatically managed by Better Auth
+      // The useSession hook will update automatically
     } catch (error) {
       console.error('Signin error:', error);
       throw error;
     }
   };
 
-  // Signout function
-  const signout = () => {
-    // Clear local storage
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-
-    // Reset auth state
-    setAuthState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
-
-    // Note: Backend signout is optional since JWT is stateless
-    // We just remove it from client side
+  // Signout function - now uses Better Auth client
+  const signout = async (): Promise<void> => {
+    try {
+      await authClient.signOut();
+      // Session is automatically cleared by Better Auth
+    } catch (error) {
+      console.error('Signout error:', error);
+      throw error;
+    }
   };
 
-  // Refresh session (check token validity)
+  // Refresh session - Better Auth handles this automatically
   const refreshSession = async (): Promise<void> => {
-    const token = authState.token || localStorage.getItem(TOKEN_KEY);
-
-    if (!token) {
-      signout();
-      return;
+    try {
+      // Refetch session from Better Auth
+      await sessionQuery.refetch();
+    } catch (error) {
+      console.error('Session refresh error:', error);
+      throw error;
     }
+  };
 
-    const isValid = await validateToken(token);
-
-    if (!isValid) {
-      signout();
-      throw new Error('Session expired. Please sign in again.');
-    }
+  // Map Better Auth session to our auth state format
+  const authState: AuthState = {
+    user: sessionQuery.data?.user || null,
+    session: sessionQuery.data || null,
+    isAuthenticated: !!sessionQuery.data?.user,
+    isLoading: sessionQuery.isPending,
   };
 
   const value: AuthContextValue = {

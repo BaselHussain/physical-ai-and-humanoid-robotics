@@ -15,11 +15,12 @@ interface BackgroundProfile {
 }
 
 interface SignupFormProps {
-  onSubmit: (email: string, password: string, background: BackgroundProfile) => Promise<void>;
+  onSubmit: (email: string, password: string, name: string, background: BackgroundProfile) => Promise<void>;
   onSwitchToSignin: () => void;
 }
 
 export default function SignupForm({ onSubmit, onSwitchToSignin }: SignupFormProps) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [progExp, setProgExp] = useState('');
@@ -39,6 +40,12 @@ export default function SignupForm({ onSubmit, onSwitchToSignin }: SignupFormPro
     const newErrors: Record<string, string> = {};
 
     // Required field validation
+    if (!name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+
     if (!email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!validateEmail(email)) {
@@ -84,7 +91,8 @@ export default function SignupForm({ onSubmit, onSwitchToSignin }: SignupFormPro
         hardware_access: hardware,
       };
 
-      await onSubmit(email, password, background);
+      // Call updated signup with name parameter
+      await onSubmit(email, password, name, background);
     } catch (error: any) {
       setErrors({ submit: error.message || 'Signup failed. Please try again.' });
     } finally {
@@ -100,6 +108,21 @@ export default function SignupForm({ onSubmit, onSwitchToSignin }: SignupFormPro
       </p>
 
       <form onSubmit={handleSubmit}>
+        {/* Name Field */}
+        <div className={styles.formGroup}>
+          <label htmlFor="name">Full Name *</label>
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="John Doe"
+            disabled={isSubmitting}
+            className={errors.name ? styles.inputError : ''}
+          />
+          {errors.name && <span className={styles.errorText}>{errors.name}</span>}
+        </div>
+
         {/* Email Field */}
         <div className={styles.formGroup}>
           <label htmlFor="email">Email *</label>

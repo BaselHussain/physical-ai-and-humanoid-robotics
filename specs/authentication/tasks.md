@@ -258,7 +258,7 @@
 
 **Duration**: ~3.5 hours
 
-- [ ] T024 [P] Write Better Auth service tests in `better-auth-service/tests/`
+- [X] T024 [P] Write Better Auth service tests in `better-auth-service/tests/`
   - **Duration**: 40 min
   - **Dependencies**: T001-T006
   - **Acceptance**: Tests cover signup, signin, token generation, custom claims, JWKS endpoint
@@ -266,19 +266,19 @@
   - **Command**: `npm test`
   - **Validation**: All tests pass
 
-- [ ] T025 [P] Write FastAPI JWT validation tests in `backend/tests/auth/`
+- [X] T025 [P] Write FastAPI JWT validation tests in `backend/tests/auth/`
   - **Duration**: 40 min
   - **Dependencies**: T007-T012
   - **Acceptance**: Tests cover JWT validation, claims extraction, expired token handling, invalid signature rejection
-  - **Output**: `backend/tests/auth/test_jwt_validation.py`
+  - **Output**: `backend/tests/auth/test_jwt_validation.py`, `test_claims_extraction.py`, `test_jwks_cache.py`
   - **Command**: `pytest backend/tests/auth/`
   - **Validation**: All tests pass
 
-- [ ] T026 [P] Write frontend auth flow tests in `physical-robotics-ai-book/src/components/Auth/__tests__/`
+- [X] T026 [P] Write frontend auth flow tests in `physical-robotics-ai-book/src/components/Auth/__tests__/`
   - **Duration**: 40 min
   - **Dependencies**: T013-T018
   - **Acceptance**: Tests cover signup flow, signin flow, token refresh, service unavailability handling
-  - **Output**: `Auth/__tests__/auth.test.tsx`
+  - **Output**: `Auth/__tests__/AuthContext.test.tsx`, `SignupForm.test.tsx`, `auth.integration.test.tsx`
   - **Command**: `npm test`
   - **Validation**: All tests pass
 
