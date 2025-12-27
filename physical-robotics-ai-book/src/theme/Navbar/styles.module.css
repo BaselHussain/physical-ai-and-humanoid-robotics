@@ -1,25 +1,29 @@
 .navbarContainer {
   position: relative;
   width: 100%;
+  z-index: 9999;
 }
 
 .customNavbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
   backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: #ffffff !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  min-height: 60px;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 [data-theme='dark'] .customNavbar {
-  background-color: rgba(0, 0, 0, 0.9);
+  background-color: #1b1b1d !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -100,6 +104,46 @@
 .signUpButton:hover {
   box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
   transform: translateY(-1px);
+}
+
+/* User Name (When Authenticated) */
+.userName {
+  color: #1f2937;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+}
+
+[data-theme='dark'] .userName {
+  color: #f3f4f6;
+}
+
+/* Sign Out Button */
+.signOutButton {
+  padding: 0.5rem 1.25rem;
+  border: 2px solid #dc2626;
+  color: #dc2626;
+  background-color: transparent;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signOutButton:hover {
+  background-color: #dc2626;
+  color: white;
+}
+
+[data-theme='dark'] .signOutButton {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme='dark'] .signOutButton:hover {
+  background-color: #f87171;
+  color: #1f2937;
 }
 
 /* Theme Toggle Button */
@@ -208,6 +252,52 @@
 
 .signUpButtonMobile:hover {
   box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Mobile User Name (When Authenticated) */
+.userNameMobile {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+[data-theme='dark'] .userNameMobile {
+  background-color: rgba(96, 165, 250, 0.2);
+  color: #60a5fa;
+}
+
+/* Mobile Sign Out Button */
+.signOutButtonMobile {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #dc2626;
+  color: #dc2626;
+  background-color: transparent;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.signOutButtonMobile:hover {
+  background-color: #dc2626;
+  color: white;
+}
+
+[data-theme='dark'] .signOutButtonMobile {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme='dark'] .signOutButtonMobile:hover {
+  background-color: #f87171;
+  color: #1f2937;
 }
 
 /* Responsive Design */
