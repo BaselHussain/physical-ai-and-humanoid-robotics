@@ -70,6 +70,9 @@ export const auth = betterAuth({
     crossSubDomainCookies: {
       enabled: true,
     },
+    // Enable cross-origin cookies for production
+    useSecureCookies: true, // Required for HTTPS
+    cookieSameSite: 'none', // Required for cross-origin
   },
 
   // Plugins
