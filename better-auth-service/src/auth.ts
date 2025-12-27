@@ -116,6 +116,8 @@ export const auth = betterAuth({
           alg: 'RS256', // RSA with SHA-256
           modulusLength: 2048, // 2048-bit key
         },
+        // Disable private key encryption to avoid secret mismatch issues
+        disablePrivateKeyEncryption: true,
         // Key rotation (optional, for production)
         // rotationInterval: 60 * 60 * 24 * 30, // 30 days
         // gracePeriod: 60 * 60 * 24 * 30, // 30 days
