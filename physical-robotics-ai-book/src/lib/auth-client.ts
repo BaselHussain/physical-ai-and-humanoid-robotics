@@ -46,6 +46,9 @@ const BETTER_AUTH_URL = getBetterAuthURL();
  */
 export const authClient = createAuthClient({
   baseURL: BETTER_AUTH_URL,
+  fetchOptions: {
+    credentials: 'include', // Include cookies in cross-origin requests
+  },
   plugins: [
     inferAdditionalFields({
       user: {
