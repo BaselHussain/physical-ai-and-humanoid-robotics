@@ -19,12 +19,14 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3001',
 
   // Trusted origins for CORS (must be at root level)
-  trustedOrigins: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://baselhussain.github.io',
-    'https://better-auth-service-7g0h.onrender.com',
-  ],
+  trustedOrigins: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://baselhussain.github.io/physical-ai-and-humanoid-robotics/',
+        'https://better-auth-service-7g0h.onrender.com',
+      ],
 
   // Enable email/password authentication
   emailAndPassword: {
