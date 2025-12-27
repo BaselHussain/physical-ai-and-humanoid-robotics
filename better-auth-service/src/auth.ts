@@ -62,17 +62,26 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // Update session every 24 hours
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5, // 5 minutes
+    },
   },
 
   // Advanced configuration
   advanced: {
     cookiePrefix: 'better-auth',
+    useSecureCookies: true, // Required for HTTPS
     crossSubDomainCookies: {
       enabled: true,
     },
-    // Enable cross-origin cookies for production
-    useSecureCookies: true, // Required for HTTPS
-    cookieSameSite: 'none', // Required for cross-origin
+    // Cookie configuration for cross-origin
+    defaultCookieAttributes: {
+      sameSite: 'none',
+      secure: true,
+      httpOnly: true,
+      path: '/',
+    },
   },
 
   // Plugins
