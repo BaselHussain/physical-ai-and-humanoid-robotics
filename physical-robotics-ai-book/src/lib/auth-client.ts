@@ -10,12 +10,12 @@ import { inferAdditionalFields } from 'better-auth/client/plugins';
 
 /**
  * Better Auth base URL
- * - Development: http://localhost:3000
+ * - Development: http://localhost:3001
  * - Production: https://better-auth-service-7g0h.onrender.com
  */
 const getBetterAuthURL = (): string => {
   if (typeof window === 'undefined') {
-    return 'http://localhost:3000';
+    return 'http://localhost:3001';
   }
 
   const hostname = window.location.hostname;
@@ -26,7 +26,7 @@ const getBetterAuthURL = (): string => {
   }
 
   // Development: localhost
-  return 'http://localhost:3000';
+  return 'http://localhost:3001';
 };
 
 const BETTER_AUTH_URL = getBetterAuthURL();

@@ -16,7 +16,15 @@ export const auth = betterAuth({
 
   // Secret and base URL from environment
   secret: process.env.BETTER_AUTH_SECRET!,
-  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3001',
+
+  // Trusted origins for CORS (must be at root level)
+  trustedOrigins: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://baselhussain.github.io',
+    'https://better-auth-service-7g0h.onrender.com',
+  ],
 
   // Enable email/password authentication
   emailAndPassword: {
@@ -50,8 +58,8 @@ export const auth = betterAuth({
 
   // Session configuration
   session: {
-    expiresIn: 60 * 15, // 15 minutes (access token)
-    updateAge: 60 * 1, // Update session every 1 minute
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // Update session every 24 hours
   },
 
   // Advanced configuration
@@ -83,7 +91,7 @@ export const auth = betterAuth({
           };
         },
         // JWT expiration time
-        expirationTime: '15m', // 15 minutes to match session
+        expirationTime: '7d', // 7 days to match session
         // Issuer and audience (will be set to baseURL by default)
         issuer: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
         audience: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
